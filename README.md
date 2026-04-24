@@ -13,7 +13,7 @@
 
 **India's first safety-first travel companion — built for solo travelers, women explorers, and backpackers navigating the length and breadth of Bharat.**
 
-[View Figma Design](#screenshots) · [Report a Bug](https://github.com/himmatmundhe07/myItnary/issues) · [Request a Feature](https://github.com/himmatmundhe07/myItnary/issues)
+[View Figma Design]([#screenshots](https://www.figma.com/design/Cwx3aXDvJ9tM0QU760L0iw/work?node-id=544-1907&t=TbFlAKX2Bwqk5ct9-1)) · [Report a Bug](https://github.com/himmatmundhe07/myItnary/issues) · [Request a Feature](https://github.com/himmatmundhe07/myItnary/issues)
 
 </div>
 
