@@ -1,0 +1,118 @@
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { ArrowLeft, X, Bell, Shield, Search } from "lucide-react";
+
+export default function TopAppBar({
+  variant = "logo",
+  title,
+  rightContent,
+  hasNotification = true,
+  bgClass = "bg-cream",
+  textClass = "text-charcoal",
+  onBack,
+}) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const handleBack = onBack || (() => navigate(-1));
+
+  if (variant === "logo") {
+    return (
+      <header className={`sticky top-0 z-50 bg-cream/80 backdrop-blur-xl border-b border-sand transition-all duration-300`}>
+        <div className="flex items-center justify-between h-16 px-6 lg:px-10 max-w-[1440px] mx-auto">
+          {/* Logo */}
+          <Link to="/home" className="flex items-center gap-2 shrink-0">
+            <Shield size={20} className="text-banyan" strokeWidth={2} />
+            <span className="font-display font-bold text-[22px] text-charcoal tracking-tight hidden sm:block">
+              My Itinerary
+            </span>
+          </Link>
+
+          {/* Links */}
+          <nav className="hidden lg:flex items-center gap-6 xl:gap-8 mx-4">
+            {['Home', 'Explore', 'Safety', 'Trips'].map((l) => {
+              const path = `/${l.toLowerCase()}`;
+              const isActive = location.pathname.startsWith(path);
+              return (
+                <Link
+                  key={l}
+                  to={path}
+                  className={`font-cabinet font-medium text-[15px] relative group ${isActive ? 'text-saffron' : 'text-taupe'}`}
+                >
+                  {l}
+                  <span className={`absolute -bottom-1 left-0 h-[2px] bg-saffron transition-all duration-300 ${isActive ? 'w-full' : 'w-0 group-hover:w-full'}`} />
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Search Bar */}
+          <div className="hidden xl:flex w-full max-w-[320px] h-[40px] bg-white border border-sand rounded-full items-center px-4 gap-3 group focus-within:border-saffron focus-within:shadow-[0_4px_14px_-4px_hsl(var(--saffron)/0.25)] transition-all shrink">
+            <Search size={16} className="text-taupe group-focus-within:text-saffron transition-colors" />
+            <input 
+              type="text" 
+              placeholder="Search destinations..." 
+              className="bg-transparent outline-none w-full font-cabinet font-medium text-[14px] text-charcoal placeholder:text-taupe/70"
+            />
+          </div>
+
+          {/* Right Actions */}
+          <div className="flex items-center gap-3 shrink-0">
+            {rightContent || (
+              <>
+                <button className="relative flex items-center justify-center w-10 h-10 hover:bg-sand/30 rounded-full transition-colors">
+                  <Bell size={20} className="text-charcoal" strokeWidth={1.8} />
+                  {hasNotification && (
+                    <span className="absolute top-2 right-2 w-[8px] h-[8px] rounded-full bg-sindoor border-2 border-cream" />
+                  )}
+                </button>
+                <div className="w-9 h-9 rounded-full bg-ivory border-[2px] border-sand flex items-center justify-center overflow-hidden">
+                  <span className="font-cabinet font-bold text-[14px] text-taupe">P</span>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </header>
+    );
+  }
+
+  return (
+    <header className={`sticky top-0 z-50 ${bgClass} border-b border-sand`}>
+      <div className="flex items-center justify-between h-14 px-5 max-w-[1440px] mx-auto">
+        {/* Left */}
+        <div className="flex items-center gap-2.5 min-w-[80px]">
+          {variant === "back" && (
+            <button onClick={handleBack} className="p-1" aria-label="Go back">
+              <ArrowLeft size={24} className={textClass} />
+            </button>
+          )}
+          {variant === "close" && (
+            <button onClick={handleBack} className="p-1" aria-label="Close">
+              <X size={24} className={textClass} />
+            </button>
+          )}
+        </div>
+
+        {/* Center */}
+        {title && (
+          <h1 className={`font-cabinet font-bold text-[18px] ${textClass} absolute left-1/2 -translate-x-1/2`}>
+            {title}
+          </h1>
+        )}
+
+        {/* Right */}
+        <div className="flex items-center gap-3 min-w-[80px] justify-end">
+          {rightContent || (
+            <>
+              <button className="relative p-1" aria-label="Notifications">
+                <Bell size={22} className={textClass} />
+                {hasNotification && (
+                  <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-sindoor" />
+                )}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+}
