@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { AuthLayout } from "../../components/layout/AuthLayout";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -32,6 +32,7 @@ const AppleIcon = () => (
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -56,7 +57,7 @@ export default function LoginPage() {
           }
         } else {
           dispatch(loginFailure(data.message));
-          alert(data.message);
+          setError(data.message);
         }
       } catch (err) {
         // Server unreachable — allow demo mode
@@ -68,7 +69,7 @@ export default function LoginPage() {
         navigate('/home');
       }
     },
-    onError: () => console.log('Google Auth Failed'),
+    onError: () => setError('Google Authentication failed. Please try again.'),
   });
 
   const {
@@ -81,6 +82,7 @@ export default function LoginPage() {
 
   const onSubmit = async (data) => {
     try {
+      setError("");
       dispatch(loginStart());
       const res = await fetch('http://localhost:5000/api/auth/login', {
         method: 'POST',
@@ -93,7 +95,7 @@ export default function LoginPage() {
         navigate('/home');
       } else {
         dispatch(loginFailure(resData.message));
-        alert(resData.message || 'Invalid credentials');
+        setError(resData.message || 'Invalid email or password. Please try again.');
       }
     } catch (err) {
       // Server unreachable — allow demo mode navigation
@@ -128,6 +130,16 @@ export default function LoginPage() {
       </div>
 
       <div className="h-[24px]"></div>
+      
+      {error && (
+        <div className="mb-6 p-4 bg-[#FFF0F0] border-l-4 border-sindoor rounded-r-[10px] flex items-start gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
+          <AlertCircle className="h-5 w-5 text-sindoor shrink-0 mt-0.5" />
+          <p className="font-jakarta text-[14px] text-[#A03030] leading-snug">
+            {error}
+          </p>
+        </div>
+      )}
+
       <div className="h-[1px] w-full bg-sand"></div>
       <div className="h-[24px]"></div>
 
