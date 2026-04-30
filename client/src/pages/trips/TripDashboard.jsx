@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { Helmet } from 'react-helmet-async';
 import {
   Search, MapPin, Bell, Calendar, Sun, Shield, Clock, ChevronRight,
   CheckCircle2, Users, Plus, Map, Pencil, Bookmark,
@@ -366,6 +367,17 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-[#FFF8F0]">
+      <Helmet>
+        <title>Trip Dashboard | My Itinerary - Manage Your Travels</title>
+        <meta
+          name="description"
+          content="Manage your active trips, track your budget, and access real-time safety alerts. View your daily itinerary and discover hidden gems near your current location."
+        />
+        <meta
+          name="keywords"
+          content="travel dashboard, trip planner, itinerary manager, travel budget tracker, safety alerts"
+        />
+      </Helmet>
       <TopAppBar variant="logo" />
 
       {/* ZONE 1 — Hero */}
