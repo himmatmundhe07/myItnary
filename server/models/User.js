@@ -14,11 +14,22 @@ const userSchema = new mongoose.Schema({
   otpExpiry: { type: Date },
   picture: { type: String },
 
+  // Additional Profile Info
+  dob: { type: String },
+  gender: { type: String },
+  city: { type: String },
+  bio: { type: String },
+
   // Step 2: Preferences
   travelTypes: [{ type: String }],
   frequency: { type: String },
   destinations: [{ type: String }],
   interests: [{ type: String }],
+  vibe: { type: String },
+  diet: { type: String },
+  accommodation: { type: String },
+  transport: { type: String },
+  languages: [{ type: String }],
 
   // Step 3: Safety
   identity: { type: String },
@@ -28,6 +39,14 @@ const userSchema = new mongoose.Schema({
   },
   medicalInfo: { type: String },
   locationEnabled: { type: Boolean, default: false },
+  
+  // Default Safety Settings
+  safetySettings: {
+    womenOnly: { type: Boolean, default: true },
+    realTimeAlerts: { type: Boolean, default: true },
+    shareLocation: { type: Boolean, default: true },
+    offlineGuide: { type: Boolean, default: false }
+  },
 
 }, { timestamps: true });
 
