@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { loginSuccess, logout } from "./store/authSlice";
 import Loader from "./components/shared/Loader";
+import { API_BASE_URL } from "./config/env";
 
 /* Route modules — each owns its own lazy imports */
 import {
@@ -24,7 +25,7 @@ function App() {
     if (token && !isAuthenticated) {
       const fetchUser = async () => {
         try {
-          const res = await fetch('http://localhost:5000/api/auth/me', {
+          const res = await fetch(`${API_BASE_URL}/auth/me`, {
             headers: {
               Authorization: `Bearer ${token}`
             }

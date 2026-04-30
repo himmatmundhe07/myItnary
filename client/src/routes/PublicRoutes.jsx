@@ -1,5 +1,6 @@
 import { lazy } from "react";
-import { Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
+
 
 const LandingPage = lazy(() => import("../pages/home/LandingPage"));
 const LoginPage = lazy(() => import("../pages/auth/LoginPage"));
@@ -20,5 +21,7 @@ const PublicRoutes = () => (
     <Route path="/auth/verify-otp" element={<OtpVerification />} />
   </>
 );
+
+
 
 export default PublicRoutes;

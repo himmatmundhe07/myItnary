@@ -1,5 +1,5 @@
 import { lazy } from "react";
-import { Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 
 const NewTripStep1 = lazy(() => import("../pages/trips/NewTripStep1"));
 const TripItinerary = lazy(() => import("../pages/trips/TripItinerary"));
@@ -14,5 +14,7 @@ const TripRoutes = () => (
     <Route path="/trips/:id/map" element={<TripMapView />} />
   </>
 );
+
+
 
 export default TripRoutes;

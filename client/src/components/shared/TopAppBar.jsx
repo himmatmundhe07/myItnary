@@ -76,11 +76,12 @@ export default function TopAppBar({
                     <span className="absolute top-2 right-2 w-[8px] h-[8px] rounded-full bg-sindoor border-2 border-cream" />
                   )}
                 </button>
-                <div className="w-9 h-9 rounded-full bg-ivory border-[2px] border-sand flex items-center justify-center overflow-hidden">
+                <Link to="/account" className="w-9 h-9 rounded-full bg-ivory border-[2px] border-sand flex items-center justify-center overflow-hidden hover:border-saffron transition-colors">
                   <span className="font-cabinet font-bold text-[14px] text-taupe uppercase">
                     {(authUser?.fullName || authUser?.name || 'T')[0]}
                   </span>
-                </div>
+                </Link>
+
               </>
             )}
           </div>

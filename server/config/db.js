@@ -12,8 +12,8 @@ const connectDB = async () => {
     console.log(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
     console.error(`Error: ${error.message}`);
-    // throw err; // Just log it so it doesn't hard-crash the server
-    console.error('MongoDB connection intentionally skipped crashing.');
+    throw error;
+
   }
 };
 

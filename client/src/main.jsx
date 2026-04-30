@@ -7,17 +7,22 @@ import { Toaster } from 'react-hot-toast'
 import { HelmetProvider } from 'react-helmet-async'
 import './index.css'
 import App from './App.jsx'
+import { GOOGLE_OAUTH_CLIENT_ID } from './config/env'
+import ErrorBoundary from './components/shared/ErrorBoundary'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <Provider store={store}>
-      <HelmetProvider>
-        <GoogleOAuthProvider clientId="996066059994-4b38nfmvrlsh34s2sgkqhkcbot330c4v.apps.googleusercontent.com">
-          <Toaster position="top-center" reverseOrder={false} />
-          <App />
-        </GoogleOAuthProvider>
-      </HelmetProvider>
-    </Provider>
+    <ErrorBoundary>
+      <Provider store={store}>
+        <HelmetProvider>
+          <GoogleOAuthProvider clientId={GOOGLE_OAUTH_CLIENT_ID || "12345-dummy-id.apps.googleusercontent.com"}>
+
+            <Toaster position="top-center" reverseOrder={false} />
+            <App />
+          </GoogleOAuthProvider>
+        </HelmetProvider>
+      </Provider>
+    </ErrorBoundary>
   </StrictMode>,
 )
 

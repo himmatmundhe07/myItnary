@@ -4,8 +4,8 @@ import { useSelector } from "react-redux";
 import { MapPin, X, ChevronRight, Shield, Star, Navigation, Bookmark, Loader2 } from "lucide-react";
 import { GoogleMap, useJsApiLoader, Marker, Polyline } from "@react-google-maps/api";
 import TopAppBar from "../../components/shared/TopAppBar";
+import { GOOGLE_MAPS_API_KEY } from "../../config/env";
 
-const GOOGLE_MAPS_API_KEY = "AIzaSyBGb-_iwZdJ7uohjACwD7bI7l6bZGLCy48";
 const LIBRARIES = ['places'];
 
 const mapOptions = {

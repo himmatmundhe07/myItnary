@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { loginSuccess } from "../../store/authSlice";
 import { ArrowRight, Check, MapPin, Shield, Lock, Sparkles } from "lucide-react";
 import { CountryCodeSelect } from "../../components/ui/CountryCodeSelect";
+import { API_BASE_URL } from "../../config/env";
 
 export default function CompleteProfile() {
   const navigate = useNavigate();
@@ -55,7 +56,7 @@ export default function CompleteProfile() {
         locationEnabled
       };
 
-      const res = await fetch("http://localhost:5000/api/auth/complete-profile", {
+      const res = await fetch(`${API_BASE_URL}/auth/complete-profile`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

@@ -4,6 +4,7 @@ import { ArrowRight, Shield, Mail } from "lucide-react";
 import { AuthLayout } from "../../components/layout/AuthLayout";
 import { useDispatch } from "react-redux";
 import { loginSuccess } from "../../store/authSlice";
+import { API_BASE_URL } from "../../config/env";
 
 export default function OtpVerification() {
   const navigate = useNavigate();
@@ -69,7 +70,7 @@ export default function OtpVerification() {
     
     setIsVerifying(true);
     try {
-      const res = await fetch("http://localhost:5000/api/auth/verify-otp", {
+      const res = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, otp: code })
@@ -100,7 +101,7 @@ export default function OtpVerification() {
   const handleResendOtp = async () => {
     setResendMsg("");
     try {
-      const res = await fetch("http://localhost:5000/api/auth/resend-otp", {
+      const res = await fetch(`${API_BASE_URL}/auth/resend-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId })

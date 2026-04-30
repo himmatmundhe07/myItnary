@@ -15,6 +15,7 @@ import {
   BottomSaveBar 
 } from "./components/PreferenceComponents";
 import { logout, updateUser } from "../../store/authSlice";
+import { API_BASE_URL } from "../../config/env";
 
 const TRAVEL_STYLES = ['Solo', 'With Partner', 'With Friends', 'With Family', 'Backpacking', 'Road Trip', 'Work Travel', 'Group Tour'];
 const FREQUENCIES = [
@@ -109,7 +110,7 @@ export default function PreferencesPage() {
         languages: prefs.languages
       };
 
-      const res = await fetch("http://localhost:5000/api/auth/profile", {
+      const res = await fetch(`${API_BASE_URL}/auth/profile`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
