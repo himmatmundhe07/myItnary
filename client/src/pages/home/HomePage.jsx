@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, MapPin, Bell, Calendar, Sun, Shield, Clock, ChevronRight, TrendingUp, HeartPulse, CheckCircle2, Circle, Users, Compass, Sparkles, ArrowRight, Loader2 } from 'lucide-react';
 import { useSelector } from 'react-redux';
+import { Helmet } from 'react-helmet-async';
 import TopAppBar from '../../components/shared/TopAppBar';
 
 const PHOTOS = {
@@ -29,9 +30,18 @@ const Home = () => {
   const firstName = user?.fullName?.split(' ')[0] || 'Traveler';
   return (
     <div className="min-h-screen bg-[#FFF8F0] relative font-jakarta">
+      <Helmet>
+        <title>Dashboard | My Itinerary - AI Travel & Healthcare</title>
+        <meta
+          name="description"
+          content="Welcome to your My Itinerary dashboard. Plan your next AI-powered trip, check local safety scores, and access healthcare services near you."
+        />
+        <link rel="canonical" href="https://myitinerary.com/" />
+      </Helmet>
+
       <div className="fixed inset-0 pointer-events-none opacity-[0.04] mix-blend-multiply z-50" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.85\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\'/%3E%3C/svg%3E")' }} />
       <TopAppBar variant="logo" />
-      <div className="mx-auto max-w-[1440px] px-[24px] lg:px-[48px] pt-[96px]">
+      <div className="mx-auto max-w-[1440px] px-[24px] lg:px-[48px] pt-[8px]">
         {/* Welcome Banner */}
         <div className="w-full bg-gradient-to-r from-[#E8640C] to-[#F0A500] rounded-[14px] px-[24px] py-[14px] mb-[24px] flex items-center justify-between shadow-[0_4px_16px_rgba(232,100,12,0.2)]">
           <div className="flex items-center gap-[10px]">
@@ -59,7 +69,7 @@ const Home = () => {
           </section>
           <aside className="w-full lg:sticky lg:top-[104px] flex flex-col pt-4 lg:pt-0 pb-4">
             <R1_Doctors />
-            <R2_TravelProfile />
+            <R2_TravelProfile user={user} />
             <R3_Notifications />
           </aside>
         </main>
@@ -71,20 +81,95 @@ const Home = () => {
 /* ── LEFT SIDEBAR ── */
 const L1_Greeting = ({ user }) => {
   const firstName = user?.fullName?.split(' ')[0] || 'Traveler';
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [userLocation, setUserLocation] = useState(() => {
+    const saved = sessionStorage.getItem('cached_location');
+    return saved ? JSON.parse(saved) : { city: "Udaipur", region: "Rajasthan" };
+  });
+  const [weather, setWeather] = useState(() => {
+    const saved = sessionStorage.getItem('cached_weather');
+    return saved ? JSON.parse(saved) : { temp: 32, condition: "Clear Sky" };
+  });
+  const [loading, setLoading] = useState(!sessionStorage.getItem('cached_location'));
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    
+    // If already cached, don't fetch again
+    if (sessionStorage.getItem('cached_location')) {
+      return () => clearInterval(timer);
+    }
+
+    // Attempt to get real location
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          
+          const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=en`);
+          const geoData = await geoRes.json();
+          const city = geoData.address.city || geoData.address.town || geoData.address.village || "Unknown";
+          const region = geoData.address.state || "India";
+          const locData = { city, region };
+          setUserLocation(locData);
+          sessionStorage.setItem('cached_location', JSON.stringify(locData));
+
+          const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`);
+          const weatherData = await weatherRes.json();
+          const temp = Math.round(weatherData.current_weather.temperature);
+          const wData = { temp, condition: "Detected" };
+          setWeather(wData);
+          sessionStorage.setItem('cached_weather', JSON.stringify(wData));
+          
+          setLoading(false);
+        } catch (err) {
+          console.error("Location/Weather fetch failed", err);
+          setLoading(false);
+        }
+      }, () => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const getGreeting = () => {
+    const hour = currentTime.getHours();
+    if (hour < 12) return "Good Morning,";
+    if (hour < 17) return "Good Afternoon,";
+    if (hour < 21) return "Good Evening,";
+    return "Good Night,";
+  };
+
+  const formattedDate = currentTime.toLocaleDateString('en-US', { 
+    weekday: 'long', 
+    day: 'numeric', 
+    month: 'long' 
+  });
+
   return (
-  <div className="pt-[16px] pb-[24px]">
-    <p className="font-jakarta text-[14px] text-[#6B4F3A]">Good Morning,</p>
-    <h1 className="font-display font-bold text-[32px] text-[#1E1410] leading-none mt-1">{firstName}</h1>
-    <div className="mt-[12px] flex items-center gap-2">
-      <span className="flex items-center gap-1.5 font-mono-dm text-[11px] text-[#6B4F3A]"><MapPin size={13} className="text-[#E8640C]" /> Udaipur, Rajasthan</span>
-      <span className="w-px h-[10px] bg-[#E8D5B7]" />
-      <span className="flex items-center gap-1.5 font-mono-dm text-[11px] text-[#B09880]"><Calendar size={13} /> Thursday, 9 May</span>
+    <div className="pt-[16px] pb-[24px]">
+      <p className="font-jakarta text-[14px] text-[#6B4F3A]">{getGreeting()}</p>
+      <h1 className="font-display font-bold text-[32px] text-[#1E1410] leading-none mt-1">{firstName}</h1>
+      <div className="mt-[12px] flex items-center gap-2">
+        <span className="flex items-center gap-1.5 font-mono-dm text-[11px] text-[#6B4F3A]">
+          <MapPin size={13} className={loading ? "animate-pulse text-[#B09880]" : "text-[#E8640C]"} /> 
+          {loading ? "Detecting location..." : `${userLocation.city}, ${userLocation.region}`}
+        </span>
+        <span className="w-px h-[10px] bg-[#E8D5B7]" />
+        <span className="flex items-center gap-1.5 font-mono-dm text-[11px] text-[#B09880]">
+          <Calendar size={13} /> {formattedDate}
+        </span>
+      </div>
+      <div className="mt-[16px] flex items-center gap-1.5">
+        <Sun size={18} className={loading ? "animate-spin text-[#E8D5B7]" : "text-[#F0A500]"} fill="currentColor" />
+        <span className="font-cabinet font-medium text-[14px] text-[#6B4F3A]">
+          {loading ? "--°C" : `${weather.temp}°C · ${weather.condition}`}
+        </span>
+      </div>
     </div>
-    <div className="mt-[16px] flex items-center gap-1.5">
-      <Sun size={18} className="text-[#F0A500]" fill="currentColor" />
-      <span className="font-cabinet font-medium text-[14px] text-[#6B4F3A]">38°C · Sunny</span>
-    </div>
-  </div>);
+  );
 };
 
 const L2_SafetyCard = () => (
@@ -142,13 +227,13 @@ const L4_RecentAlerts = () => (
 /* ── CENTER COLUMN ── */
 const C1_WelcomeHero = () => (
   <div className="w-full h-[220px] rounded-[20px] overflow-hidden relative shadow-[0_8px_32px_rgba(30,20,16,0.12)] group">
-    <img src={PHOTOS.jaisalmer} alt="Rajasthan" className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-1000 ease-out" />
+    <img src={PHOTOS.jaisalmer} alt="Sunset at Jaisalmer Fort, Rajasthan" className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-1000 ease-out" />
     <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[rgba(30,20,16,0.65)] to-transparent" />
     <div className="absolute bottom-[20px] left-[20px]">
       <p className="font-mono-dm text-[11px] text-white/65 uppercase tracking-widest">Start Your Journey</p>
       <h2 className="font-display font-bold text-[26px] text-white leading-none mt-1">Where in India are you going?</h2>
       <p className="font-jakarta text-[13px] text-white/75 mt-1.5 max-w-[400px] leading-relaxed">Plan your first safe trip across India.<br/>AI-powered itinerary. Real-time safety. Local guardians.</p>
-      <Link to="/trips/new" className="mt-[16px] h-[52px] w-max rounded-[28px] bg-[#E8640C] text-white px-[24px] font-cabinet font-semibold text-[14px] flex items-center gap-1.5 shadow-[0_4px_20px_rgba(232,100,12,0.40)] hover:scale-105 transition-transform">Plan My First Trip <ArrowRight size={14} /></Link>
+      <Link to="/trips/new" className="mt-[16px] h-[52px] w-max rounded-[28px] bg-[#E8640C] text-white px-[24px] font-cabinet font-semibold text-[14px] flex items-center gap-1.5 shadow-[0_4px_20px_rgba(232,100,12,0.40)] hover:scale-105 transition-transform">Plan My First AI Trip <ArrowRight size={14} /></Link>
     </div>
     <div className="absolute bottom-[20px] right-[20px] flex items-center gap-1.5">
       <Shield size={18} className="text-white/60" /><span className="font-mono-dm text-[10px] text-white/60">Safety included with every trip</span>
@@ -196,7 +281,7 @@ const C3_SafetySnapshot = () => (
       <Link to="/safety" className="mt-[12px] flex items-center gap-1 group w-max"><span className="font-cabinet font-medium text-[12px] text-[#E8640C]">View Full Safety Report</span><ChevronRight size={12} className="text-[#E8640C] group-hover:translate-x-0.5 transition-transform"/></Link>
     </div>
     <div className="w-full sm:w-[40%] h-[150px] sm:h-auto relative rounded-[12px] overflow-hidden border border-[#E8D5B7]">
-      <img src={PHOTOS.mapThumb} alt="Map" className="absolute inset-0 w-full h-full object-cover" />
+      <img src={PHOTOS.mapThumb} alt="Interactive safety map showing Udaipur landmarks" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
       <div className="absolute inset-0 bg-[#E8640C] opacity-10 mix-blend-color" />
       <div className="absolute inset-0 flex items-center justify-center"><MapPin size={28} className="text-[#E8640C] drop-shadow-md" fill="currentColor" /></div>
     </div>
@@ -218,7 +303,7 @@ const C4_HiddenGems = () => {
       <div className="mt-[14px] flex gap-[12px] overflow-x-auto pb-4 scrollbar-none snap-x">
         {gems.map((g,i) => (
           <div key={i} className="flex-1 min-w-[240px] h-[200px] rounded-[16px] overflow-hidden relative shadow-[0_4px_16px_rgba(30,20,16,0.10)] group cursor-pointer hover:scale-[1.015] transition-all snap-center">
-            <img src={g.img} alt={g.title} className="absolute inset-0 w-full h-full object-cover" />
+            <img src={g.img} alt={`Hidden Gem: ${g.title} in ${g.loc}`} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
             <div className="absolute bottom-[16px] left-[16px] right-[16px]">
               <p className="font-mono-dm text-[10px] text-white/70 uppercase">{g.dist}</p>
@@ -264,13 +349,13 @@ const C5_Trending = () => {
 /* ── RIGHT SIDEBAR ── */
 const R1_Doctors = () => (
   <div className="bg-white border border-[#E8D5B7] rounded-[16px] p-[16px] shadow-[0_2px_8px_rgba(30,20,16,0.07)]">
-    <div className="flex justify-between items-center"><SectionLabel>Doctors Near You</SectionLabel><Link to="/healthcare/doctors" className="font-cabinet font-medium text-[11px] text-[#E8640C]">View All</Link></div>
+    <div className="flex justify-between items-center"><SectionLabel>Doctors Near You</SectionLabel><Link to="/healthcare" className="font-cabinet font-medium text-[11px] text-[#E8640C]">View All</Link></div>
     <div className="mt-[12px] flex flex-col gap-[10px]">
       {[{img:PHOTOS.doc1,name:'Dr. Kavita Sharma',spec:'General Physician',dist:'0.8 km'},{img:PHOTOS.doc2,name:'Dr. Arjun Reddy',spec:'Emergency Med',dist:'1.4 km'}].map((d,i)=>(
         <React.Fragment key={i}>
           {i>0 && <div className="w-full h-px bg-[#E8D5B7]/50 my-1"/>}
           <div className="flex items-center">
-            <img src={d.img} className="w-[44px] h-[44px] rounded-full object-cover border-[1.5px] border-[#E8D5B7] shrink-0" alt="Dr" />
+            <img src={d.img} className="w-[44px] h-[44px] rounded-full object-cover border-[1.5px] border-[#E8D5B7] shrink-0" alt={`Verified Doctor: ${d.name}`} loading="lazy" />
             <div className="ml-[12px] flex-1 min-w-0">
               <h4 className="font-cabinet font-semibold text-[14px] text-[#1E1410] truncate">{d.name}</h4>
               <p className="font-jakarta text-[12px] text-[#6B4F3A]">{d.spec}</p>
@@ -278,21 +363,27 @@ const R1_Doctors = () => (
             </div>
             <div className="flex flex-col items-end gap-1.5 ml-2">
               <span className="font-mono-dm text-[11px] text-[#E8640C]">{d.dist}</span>
-              <Link to="/healthcare/doctors" className="w-[52px] h-[30px] rounded-[8px] bg-[#E8640C] text-white font-cabinet font-semibold text-[12px] shadow-[0_4px_12px_rgba(232,100,12,0.25)] hover:scale-105 transition-transform flex items-center justify-center">Book</Link>
+              <Link to="/healthcare" className="w-auto px-3 h-[30px] rounded-[8px] bg-[#E8640C] text-white font-cabinet font-semibold text-[11px] shadow-[0_4px_12px_rgba(232,100,12,0.25)] hover:scale-105 transition-transform flex items-center justify-center whitespace-nowrap">Book Appointment</Link>
             </div>
           </div>
         </React.Fragment>
       ))}
     </div>
-    <Link to="/healthcare/doctors" className="mt-[12px] flex items-center gap-1 group w-max"><span className="font-cabinet font-medium text-[12px] text-[#E8640C]">Find More Doctors</span><ChevronRight size={12} className="text-[#E8640C] group-hover:translate-x-0.5 transition-transform"/></Link>
+    <Link to="/healthcare" className="mt-[12px] flex items-center gap-1 group w-max"><span className="font-cabinet font-medium text-[12px] text-[#E8640C]">Find More Doctors</span><ChevronRight size={12} className="text-[#E8640C] group-hover:translate-x-0.5 transition-transform"/></Link>
   </div>
 );
 
-const R2_TravelProfile = () => (
+const R2_TravelProfile = ({ user }) => (
   <div className="mt-[20px] bg-white border border-[#E8D5B7] rounded-[16px] p-[20px] shadow-[0_2px_8px_rgba(30,20,16,0.07)]">
     <div className="flex items-center">
-      <img src={PHOTOS.user} className="w-[56px] h-[56px] rounded-full object-cover border-[2px] border-[#E8D5B7] shrink-0" alt="Profile" />
-      <div className="ml-[12px]"><h3 className="font-cabinet font-bold text-[16px] text-[#1E1410]">Priya Venkatesh</h3><p className="font-mono-dm text-[11px] text-[#6B4F3A] mt-0.5">Solo Traveler · Udaipur</p><p className="font-jakarta text-[12px] text-[#B09880] mt-0.5">priya.v@gmail.com</p></div>
+      <div className="w-[56px] h-[56px] rounded-full bg-ivory border-[2px] border-[#E8D5B7] shrink-0 flex items-center justify-center overflow-hidden">
+        <span className="font-display font-bold text-[24px] text-[#E8D5B7]">{(user?.fullName || user?.name || 'T')[0]}</span>
+      </div>
+      <div className="ml-[12px]">
+        <h3 className="font-cabinet font-bold text-[16px] text-[#1E1410]">{user?.fullName || user?.name || 'Traveler'}</h3>
+        <p className="font-mono-dm text-[11px] text-[#6B4F3A] mt-0.5">Solo Traveler · Udaipur</p>
+        <p className="font-jakarta text-[12px] text-[#B09880] mt-0.5 truncate max-w-[180px]">{user?.email}</p>
+      </div>
     </div>
     <div className="w-full h-px bg-[#E8D5B7] my-[16px]" />
     <div className="grid grid-cols-2 gap-[10px]">
