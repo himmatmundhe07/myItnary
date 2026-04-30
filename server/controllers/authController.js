@@ -301,3 +301,43 @@ export const completeProfile = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Update user profile & preferences
+// @route   PUT /api/auth/profile
+// @access  Private
+export const updateProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Update fields if provided
+    const updatableFields = [
+      'fullName', 'phone', 'dob', 'gender', 'city', 'bio', 'picture',
+      'travelTypes', 'frequency', 'destinations', 'interests',
+      'vibe', 'diet', 'accommodation', 'transport', 'languages',
+      'safetySettings'
+    ];
+
+    updatableFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        user[field] = req.body[field];
+      }
+    });
+
+    await user.save();
+
+    // Return the updated user without sensitive fields
+    const updatedUser = user.toObject();
+    delete updatedUser.password;
+    delete updatedUser.otp;
+    delete updatedUser.otpExpiry;
+
+    res.json(updatedUser);
+  } catch (error) {
+    console.error('[UPDATE PROFILE ERROR]', error);
+    res.status(500).json({ message: error.message });
+  }
+};
