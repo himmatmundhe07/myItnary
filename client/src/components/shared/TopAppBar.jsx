@@ -1,4 +1,5 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useSelector } from "react-redux";
 import { ArrowLeft, X, Bell, Shield, Search } from "lucide-react";
 
 export default function TopAppBar({
@@ -10,6 +11,7 @@ export default function TopAppBar({
   textClass = "text-charcoal",
   onBack,
 }) {
+  const { user: authUser } = useSelector((state) => state.auth);
   const navigate = useNavigate();
   const location = useLocation();
   const handleBack = onBack || (() => navigate(-1));
@@ -28,16 +30,20 @@ export default function TopAppBar({
 
           {/* Links */}
           <nav className="hidden lg:flex items-center gap-6 xl:gap-8 mx-4">
-            {['Home', 'Explore', 'Safety', 'Trips'].map((l) => {
-              const path = `/${l.toLowerCase()}`;
+            {[
+              { label: 'Home', path: '/home' },
+              { label: 'Explore', path: '/explore' },
+              { label: 'Healthcare', path: '/healthcare' },
+              { label: 'Trips', path: '/trips/new' },
+            ].map(({ label, path }) => {
               const isActive = location.pathname.startsWith(path);
               return (
                 <Link
-                  key={l}
+                  key={label}
                   to={path}
                   className={`font-cabinet font-medium text-[15px] relative group ${isActive ? 'text-saffron' : 'text-taupe'}`}
                 >
-                  {l}
+                  {label}
                   <span className={`absolute -bottom-1 left-0 h-[2px] bg-saffron transition-all duration-300 ${isActive ? 'w-full' : 'w-0 group-hover:w-full'}`} />
                 </Link>
               );
@@ -58,6 +64,12 @@ export default function TopAppBar({
           <div className="flex items-center gap-3 shrink-0">
             {rightContent || (
               <>
+                {location.pathname.startsWith('/healthcare') && (
+                  <Link to="/healthcare/profile" className="hidden md:flex items-center gap-2 px-3 py-2 hover:bg-sand/30 rounded-full transition-all mr-2">
+                    <Shield size={16} className="text-saffron" />
+                    <span className="font-cabinet font-semibold text-[14px] text-charcoal">My Health Profile</span>
+                  </Link>
+                )}
                 <button className="relative flex items-center justify-center w-10 h-10 hover:bg-sand/30 rounded-full transition-colors">
                   <Bell size={20} className="text-charcoal" strokeWidth={1.8} />
                   {hasNotification && (
@@ -65,7 +77,9 @@ export default function TopAppBar({
                   )}
                 </button>
                 <div className="w-9 h-9 rounded-full bg-ivory border-[2px] border-sand flex items-center justify-center overflow-hidden">
-                  <span className="font-cabinet font-bold text-[14px] text-taupe">P</span>
+                  <span className="font-cabinet font-bold text-[14px] text-taupe uppercase">
+                    {(authUser?.fullName || authUser?.name || 'T')[0]}
+                  </span>
                 </div>
               </>
             )}

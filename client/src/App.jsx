@@ -9,10 +9,10 @@ import {
   ProtectedRoute,
   PublicRoutes,
   DashboardRoutes,
-  SafetyRoutes,
   HealthcareRoutes,
   TripRoutes,
   DiscoverRoutes,
+  SafetyRoutes,
 } from "./routes";
 
 function App() {
@@ -55,15 +55,19 @@ function App() {
           {/* Protected Routes — require authentication */}
           <Route element={<ProtectedRoute />}>
             {DashboardRoutes()}
-            {SafetyRoutes()}
-            {HealthcareRoutes()}
           </Route>
+
+          {/* Healthcare */}
+          {HealthcareRoutes()}
 
           {/* Trip Planning (Public for review) */}
           {TripRoutes()}
 
           {/* Experience Discovery (Public for review) */}
           {DiscoverRoutes()}
+
+          {/* Safety & Emergency */}
+          {SafetyRoutes()}
         </Routes>
       </Suspense>
     </BrowserRouter>
