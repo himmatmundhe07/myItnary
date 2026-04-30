@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Check, MapPin, Shield, Lock } from "lucide-react";
 import { AuthLayout } from "../../components/layout/AuthLayout";
 import { CountryCodeSelect } from "../../components/ui/CountryCodeSelect";
+import { API_BASE_URL } from "../../config/env";
 
 export default function SignupStep3() {
   const navigate = useNavigate();
@@ -33,7 +34,7 @@ export default function SignupStep3() {
         locationEnabled
       };
 
-      const res = await fetch("http://localhost:5000/api/auth/register", {
+      const res = await fetch(`${API_BASE_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)

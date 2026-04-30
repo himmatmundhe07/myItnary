@@ -17,6 +17,7 @@ import {
   DangerZoneSection,
 } from "./components/ProfileSections";
 import { PhotoChangeModal, DeactivateModal, DeleteModal } from "./components/Modals";
+import { API_BASE_URL } from "../../config/env";
 
 export default function ProfilePage() {
   const { user } = useSelector((state) => state.auth);
@@ -71,7 +72,7 @@ export default function ProfilePage() {
         gender: newData.gender,
         city: newData.city
       };
-      const res = await fetch("http://localhost:5000/api/auth/profile", {
+      const res = await fetch(`${API_BASE_URL}/auth/profile`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
         body: JSON.stringify(payload)
@@ -93,7 +94,7 @@ export default function ProfilePage() {
 
   const handleSaveBio = async (newBio) => {
     try {
-      const res = await fetch("http://localhost:5000/api/auth/profile", {
+      const res = await fetch(`${API_BASE_URL}/auth/profile`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
         body: JSON.stringify({ bio: newBio })
@@ -200,7 +201,7 @@ export default function ProfilePage() {
           onClose={() => setModalState(null)}
           onSave={async (newPic) => {
             try {
-              const res = await fetch("http://localhost:5000/api/auth/profile", {
+              const res = await fetch(`${API_BASE_URL}/auth/profile`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
                 body: JSON.stringify({ picture: newPic })

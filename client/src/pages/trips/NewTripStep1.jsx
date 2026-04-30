@@ -6,8 +6,8 @@ import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { setTripStart, setTripSuccess, setTripFailure } from "../../store/tripSlice";
 import TopAppBar from "../../components/shared/TopAppBar";
+import { API_BASE_URL, GOOGLE_MAPS_API_KEY } from "../../config/env";
 
-const GOOGLE_MAPS_API_KEY = "AIzaSyBGb-_iwZdJ7uohjACwD7bI7l6bZGLCy48";
 const LIBRARIES = ['places'];
 
 const PHOTOS = {
@@ -146,7 +146,7 @@ export default function NewTripStep1() {
     };
 
     try {
-      const response = await fetch('http://localhost:5000/api/trips/generate', {
+      const response = await fetch(`${API_BASE_URL}/trips/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(tripPayload)

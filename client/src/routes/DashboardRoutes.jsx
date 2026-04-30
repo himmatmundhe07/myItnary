@@ -1,5 +1,6 @@
 import { lazy } from "react";
-import { Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
+
 
 const HomePage = lazy(() => import("../pages/home/HomePage"));
 const CompleteProfile = lazy(() => import("../pages/auth/CompleteProfile"));
@@ -27,5 +28,7 @@ const DashboardRoutes = () => (
     <Route path="/account/settings" element={<SettingsPage />} />
   </>
 );
+
+
 
 export default DashboardRoutes;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { AuthLayout } from "../../components/layout/AuthLayout";
@@ -6,8 +6,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useGoogleLogin } from '@react-oauth/google';
 import { useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { loginStart, loginSuccess, loginFailure } from "../../store/authSlice";
+import { API_BASE_URL, GOOGLE_OAUTH_CLIENT_ID } from "../../config/env";
 import * as z from "zod";
 
 const loginSchema = z.object({
@@ -30,47 +31,39 @@ const AppleIcon = () => (
   </svg>
 );
 
+const GoogleLoginButton = ({ onSuccess, onError, disabled }) => {
+  const login = useGoogleLogin({
+    onSuccess,
+    onError
+  });
+
+  return (
+    <button 
+      type="button" 
+      onClick={() => login()} 
+      disabled={disabled}
+      className="flex-1 h-[52px] bg-white border border-sand rounded-[10px] flex items-center justify-center gap-2 hover:bg-ivory hover:border-[#C8B597] transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      <GoogleIcon />
+      <span className="font-cabinet font-medium text-[14px] text-charcoal">Google</span>
+    </button>
+  );
+};
+
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { isAuthenticated } = useSelector((state) => state.auth);
 
-  const googleLoginAction = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      try {
-        console.log("Google token:", tokenResponse);
-        dispatch(loginStart());
-        const res = await fetch('http://localhost:5000/api/auth/google', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: tokenResponse.access_token }),
-        });
-        const data = await res.json();
-        if (res.ok) {
-          dispatch(loginSuccess({ user: data, token: data.token }));
-          // Redirect to profile completion if Google user hasn't filled preferences
-          if (data.isProfileComplete === false) {
-            navigate('/complete-profile');
-          } else {
-            navigate('/home');
-          }
-        } else {
-          dispatch(loginFailure(data.message));
-          setError(data.message);
-        }
-      } catch (err) {
-        // Server unreachable — allow demo mode
-        console.warn('Backend unreachable for Google auth, entering demo mode');
-        dispatch(loginSuccess({
-          user: { name: 'Google User', email: 'user@gmail.com' },
-          token: 'demo-google-token',
-        }));
-        navigate('/home');
-      }
-    },
-    onError: () => setError('Google Authentication failed. Please try again.'),
-  });
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/home');
+    }
+  }, [isAuthenticated, navigate]);
+
+
 
   const {
     register,
@@ -84,29 +77,32 @@ export default function LoginPage() {
     try {
       setError("");
       dispatch(loginStart());
-      const res = await fetch('http://localhost:5000/api/auth/login', {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      const resData = await res.json();
+      const resData = await res.json().catch(() => ({ message: "Server returned a non-JSON response" }));
       if (res.ok) {
         dispatch(loginSuccess({ user: resData, token: resData.token }));
         navigate('/home');
       } else {
-        dispatch(loginFailure(resData.message));
-        setError(resData.message || 'Invalid email or password. Please try again.');
+        const errorMsg = resData?.message || 'Invalid email or password. Please try again.';
+        dispatch(loginFailure(errorMsg));
+        setError(errorMsg);
       }
     } catch (err) {
+      console.error('Login error:', err);
       // Server unreachable — allow demo mode navigation
       console.warn('Backend unreachable, entering demo mode:', err.message);
       dispatch(loginSuccess({
-        user: { name: data.email.split('@')[0], email: data.email },
+        user: { fullName: data.email.split('@')[0], email: data.email },
         token: 'demo-token',
       }));
       navigate('/home');
     }
   };
+
 
   const TopRightLink = (
     <span className="text-sm font-jakarta text-taupe">
@@ -237,15 +233,46 @@ export default function LoginPage() {
       </div>
 
       <div className="flex gap-3">
-        <button type="button" onClick={() => googleLoginAction()} className="flex-1 h-[52px] bg-white border border-sand rounded-[10px] flex items-center justify-center gap-2 hover:bg-ivory hover:border-[#C8B597] transition-all shadow-sm">
-          <GoogleIcon />
-          <span className="font-cabinet font-medium text-[14px] text-charcoal">Google</span>
-        </button>
+        {GOOGLE_OAUTH_CLIENT_ID ? (
+          <GoogleLoginButton 
+            onSuccess={async (tokenResponse) => {
+              try {
+                dispatch(loginStart());
+                const res = await fetch(`${API_BASE_URL}/auth/google`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ token: tokenResponse.access_token }),
+                });
+                const data = await res.json().catch(() => ({ message: "Server returned a non-JSON response" }));
+                if (res.ok) {
+                  dispatch(loginSuccess({ user: data, token: data.token }));
+                  if (data.isProfileComplete === false) navigate('/complete-profile');
+                  else navigate('/home');
+                } else {
+                  setError(data?.message || 'Google authentication failed');
+                }
+              } catch (err) {
+                dispatch(loginSuccess({
+                  user: { fullName: 'Google User', email: 'user@gmail.com' },
+                  token: 'demo-google-token',
+                }));
+                navigate('/home');
+              }
+            }}
+            onError={() => setError('Google Authentication failed.')}
+          />
+        ) : (
+          <button type="button" disabled className="flex-1 h-[52px] bg-white border border-sand rounded-[10px] flex items-center justify-center gap-2 opacity-50 cursor-not-allowed">
+            <GoogleIcon />
+            <span className="font-cabinet font-medium text-[14px] text-charcoal">Google (Disabled)</span>
+          </button>
+        )}
         <button type="button" className="flex-1 h-[52px] bg-white border border-sand rounded-[10px] flex items-center justify-center gap-2 hover:bg-ivory hover:border-[#C8B597] transition-all shadow-sm">
           <AppleIcon />
           <span className="font-cabinet font-medium text-[14px] text-charcoal">Apple</span>
         </button>
       </div>
+
 
       <div className="mt-8 text-center text-[12px] font-jakarta text-taupe leading-relaxed max-w-[320px] mx-auto">
         By logging in, you agree to our{" "}
