@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import googleRoutes from './routes/googleRoutes.js';
+import tripRoutes from './routes/tripRoutes.js';
 
 dotenv.config();
 
@@ -28,6 +29,7 @@ app.use(morgan('dev'));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/google', googleRoutes);
+app.use('/api/trips', tripRoutes);
 
 app.get('/', (req, res) => {
   res.send('API is running...');
