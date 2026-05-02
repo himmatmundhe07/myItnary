@@ -160,7 +160,7 @@ export default function PreferencesPage() {
       <Toaster />
 
       <main className="max-w-[1100px] mx-auto pt-[72px] px-[24px]">
-        <div className="flex gap-[48px]">
+        <div className="flex flex-col lg:flex-row gap-[32px] lg:gap-[48px]">
           
           <ProfileSidebar 
             user={user}
@@ -200,7 +200,7 @@ export default function PreferencesPage() {
 
             {/* Section 2 - Frequency */}
             <SectionCard label="TRAVEL FREQUENCY" helper="How often do you take trips? This helps us tailor recommendations.">
-              <div className="grid grid-cols-2 gap-[12px] mt-[10px]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-[12px] mt-[10px]">
                 {FREQUENCIES.map(freq => (
                   <FrequencyCard key={freq.id} {...freq} selected={prefs.frequency === freq.id} onClick={() => setSingleItem('frequency', freq.id)} />
                 ))}
@@ -227,7 +227,7 @@ export default function PreferencesPage() {
 
             {/* Section 5 - Vibe */}
             <SectionCard label="YOUR TRAVEL VIBE" helper="How do you prefer to pace your trips? This shapes how busy or relaxed your generated itinerary will be.">
-              <div className="grid grid-cols-4 gap-[12px] mt-[10px]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[12px] mt-[10px]">
                 {VIBES.map(vibe => (
                   <FrequencyCard key={vibe.id} {...vibe} selected={prefs.vibe === vibe.id} onClick={() => setSingleItem('vibe', vibe.id)} />
                 ))}
