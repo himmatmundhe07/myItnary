@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { Search, MapPin, Download, Phone, AlertTriangle, ChevronDown, X, Plus, ArrowRight, Stethoscope, Building2, Heart } from "lucide-react";
@@ -6,9 +6,10 @@ import { Helmet } from "react-helmet-async";
 import TopAppBar from "../../components/shared/TopAppBar";
 import DoctorCard from "./components/DoctorCard";
 import HospitalCard, { PharmacyCard } from "./components/HospitalCard";
-import { DOCTORS, HOSPITALS, PHARMACIES, SPECIALTIES } from "./data";
+import { API_BASE_URL } from "../../config/env";
 
 const TABS = ["Doctors", "Hospitals", "Pharmacies"];
+const SPECIALTIES = ["All", "General Physician", "Pediatrician", "Dermatology", "Orthopedic", "Dental Surgeon", "Emergency Medicine"];
 const ACTIVE_FILTERS = ["General Physician", "English Speaking", "Open Now", "Within 5 km"];
 
 export default function HealthcareHome() {
@@ -18,6 +19,31 @@ export default function HealthcareHome() {
   const [activeSpecialty, setActiveSpecialty] = useState("General Physician");
   const [filters, setFilters] = useState(ACTIVE_FILTERS);
   const [searchVal, setSearchVal] = useState("");
+  const [doctors, setDoctors] = useState([]);
+  const [hospitals, setHospitals] = useState([]);
+  const [pharmacies, setPharmacies] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchHealthcareData = async () => {
+      try {
+        setLoading(true);
+        const [docRes, hospRes, pharmRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/healthcare/doctors`),
+          fetch(`${API_BASE_URL}/healthcare/hospitals`),
+          fetch(`${API_BASE_URL}/healthcare/pharmacies`),
+        ]);
+        if (docRes.ok) setDoctors(await docRes.json());
+        if (hospRes.ok) setHospitals(await hospRes.json());
+        if (pharmRes.ok) setPharmacies(await pharmRes.json());
+      } catch (error) {
+        console.error('Failed to fetch healthcare data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHealthcareData();
+  }, []);
   const [searchFocused, setSearchFocused] = useState(false);
 
   const removeFilter = (filterToRemove) => {
@@ -51,42 +77,16 @@ export default function HealthcareHome() {
       </Helmet>
 
       {/* Nav with Health Profile link */}
-      <header className="sticky top-0 z-50 bg-[rgba(255,248,240,0.80)] backdrop-blur-xl border-b border-[#E8D5B7]">
-        <div className="flex items-center justify-between h-[72px] px-[48px] max-w-[1440px] mx-auto">
-          <Link to="/home" className="flex items-center gap-[8px]">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2D6A4F" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            <span className="font-display font-bold text-[20px] text-[#1E1410]">My Itinerary</span>
-          </Link>
-          <div className="hidden xl:flex w-[480px] h-[40px] bg-[#FEF3E2] border border-[#E8D5B7] rounded-[100px] items-center px-[16px] gap-[8px]">
-            <Search size={16} className="text-[#B09880]" />
-            <input type="text" placeholder="Search destinations..." className="bg-transparent outline-none w-full font-cabinet font-medium text-[14px] text-[#1E1410] placeholder:text-[#B09880]" />
-          </div>
-          <div className="flex items-center gap-[16px]">
-            <Link to="/healthcare/profile" className="flex items-center gap-[6px] hover:opacity-80 transition-opacity">
-              <Heart size={16} className="text-[#E8640C]" />
-              <span className="font-cabinet font-medium text-[13px] text-[#6B4F3A]">My Health Profile</span>
-            </Link>
-            <button className="relative w-[40px] h-[40px] flex items-center justify-center rounded-full hover:bg-[#F5EDE0] transition-colors">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1E1410" strokeWidth="1.8"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
-              <span className="absolute top-[8px] right-[8px] w-[8px] h-[8px] rounded-full bg-[#C0392B] border-2 border-[#FFF8F0]" />
-            </button>
-            <div className="w-[36px] h-[36px] rounded-full bg-[#FEF3E2] border-2 border-[#E8D5B7] flex items-center justify-center overflow-hidden">
-              <span className="font-cabinet font-bold text-[14px] text-[#6B4F3A] uppercase">
-                {(authUser?.fullName || authUser?.name || 'T')[0]}
-              </span>
-            </div>
-          </div>
-        </div>
-      </header>
+      <TopAppBar variant="logo" />
 
       <div className="max-w-[1200px] mx-auto px-[24px] pt-[64px]">
 
         {/* ═══════ ZONE 1 — HERO + SEARCH + MAP ═══════ */}
-        <div className="flex gap-[64px]">
+        <div className="flex flex-col lg:flex-row gap-[32px] lg:gap-[64px]">
           {/* Left — 600px */}
-          <div className="w-[600px] shrink-0">
+          <div className="w-full lg:w-[600px] shrink-0">
             <p className="font-mono-dm text-[11px] text-[#B09880] uppercase tracking-[2px]">Healthcare in India</p>
-            <h1 className="font-display font-extrabold text-[44px] text-[#1E1410] leading-[1.1] mt-[12px]">
+            <h1 className="font-display font-extrabold text-[36px] md:text-[44px] text-[#1E1410] leading-[1.1] mt-[12px]">
               Find a <span className="relative inline-block">trusted<svg className="absolute -bottom-[4px] left-0 w-full" height="8" viewBox="0 0 200 8" fill="none"><path d="M2 6c40-4 80-4 120-2s60 2 76 0" stroke="#E8640C" strokeWidth="2.5" strokeLinecap="round"/></svg></span> doctor.<br/>Wherever you are.
             </h1>
             <p className="font-jakarta text-[16px] text-[#6B4F3A] leading-[1.6] mt-[12px] max-w-[480px]">Verified doctors, real cost estimates, and English-speaking clinics — searchable by your current location across India.</p>
@@ -154,7 +154,7 @@ export default function HealthcareHome() {
           </div>
 
           {/* Right — Map Preview */}
-          <div className="flex-1 relative h-[440px] rounded-[16px] overflow-hidden border border-[#E8D5B7] shadow-[0_4px_16px_rgba(30,20,16,0.10)]">
+          <div className="w-full lg:flex-1 relative h-[300px] lg:h-[440px] rounded-[16px] overflow-hidden border border-[#E8D5B7] shadow-[0_4px_16px_rgba(30,20,16,0.10)]">
             <div className="w-full h-full bg-[#E8D5B7] relative">
               <img src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=800&q=60" alt="Healthcare services map showing doctors and hospitals in Udaipur" loading="lazy" className="w-full h-full object-cover opacity-60" />
               {/* Pins */}
@@ -176,15 +176,15 @@ export default function HealthcareHome() {
         </div>
 
         {/* ═══════ ZONE 2 — TRAVEL HEALTH ADVISORY ═══════ */}
-        <div className="mt-[40px] bg-[#FEF3E2] border border-[#E8D5B7] rounded-[16px] px-[24px] py-[20px] flex items-center justify-between">
+        <div className="mt-[40px] bg-[#FEF3E2] border border-[#E8D5B7] rounded-[16px] px-[16px] md:px-[24px] py-[20px] flex flex-col md:flex-row items-start md:items-center justify-between gap-[16px] md:gap-0">
           <div>
             <p className="font-mono-dm text-[10px] text-[#E8640C] uppercase tracking-[2px]">Travel Health Advisory</p>
             <h3 className="font-cabinet font-bold text-[16px] text-[#1E1410] mt-[6px]">Traveling to Rajasthan?</h3>
             <p className="font-jakarta text-[14px] text-[#6B4F3A] leading-[1.5] mt-[4px] max-w-[640px]">Heat exhaustion is common in summer months. Carry ORS sachets. Stay hydrated. Avoid outdoor activity between 12 PM and 4 PM.</p>
           </div>
-          <div className="flex flex-col gap-[8px] shrink-0">
-            <button className="flex items-center gap-[6px] font-cabinet font-medium text-[13px] text-[#E8640C]"><Download size={14} /> Download Rajasthan Health Guide</button>
-            <button className="flex items-center gap-[6px] font-cabinet font-medium text-[13px] text-[#C0392B]"><Phone size={14} className="text-[#C0392B]" /> Emergency Support Numbers</button>
+          <div className="flex flex-col sm:flex-row md:flex-col gap-[8px] shrink-0 w-full md:w-auto">
+            <button className="flex items-center justify-center gap-[6px] font-cabinet font-medium text-[13px] text-[#E8640C] border border-[#E8640C] rounded-[8px] px-3 py-2 sm:border-none sm:p-0"><Download size={14} /> Download Rajasthan Health Guide</button>
+            <button className="flex items-center justify-center gap-[6px] font-cabinet font-medium text-[13px] text-[#C0392B] border border-[#C0392B] rounded-[8px] px-3 py-2 sm:border-none sm:p-0"><Phone size={14} className="text-[#C0392B]" /> Emergency Support Numbers</button>
           </div>
         </div>
 
@@ -218,29 +218,41 @@ export default function HealthcareHome() {
 
           {/* DOCTORS GRID */}
           {activeTab === "Doctors" && (
-            <div className="mt-[16px] grid grid-cols-3 gap-[20px]">
-              {DOCTORS.map(d => (
-                <DoctorCard 
-                  key={d.id} 
-                  doctor={d} 
-                  onViewProfile={() => handleViewProfile(d)}
-                  onBook={() => handleBook(d)}
-                />
-              ))}
+            <div className="mt-[16px] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[20px]">
+              {loading ? (
+                <div className="py-8 text-[#6B4F3A] col-span-full text-center">Loading doctors...</div>
+              ) : (
+                doctors.map(d => (
+                  <DoctorCard 
+                    key={d.id || d._id} 
+                    doctor={d} 
+                    onViewProfile={() => handleViewProfile(d)}
+                    onBook={() => handleBook(d)}
+                  />
+                ))
+              )}
             </div>
           )}
 
           {/* HOSPITALS GRID */}
           {activeTab === "Hospitals" && (
-            <div className="mt-[16px] grid grid-cols-2 gap-[20px]">
-              {HOSPITALS.map(h => <HospitalCard key={h.id} hospital={h} onViewDetails={handleViewHospital} />)}
+            <div className="mt-[16px] grid grid-cols-1 md:grid-cols-2 gap-[20px]">
+              {loading ? (
+                <div className="py-8 text-[#6B4F3A] col-span-full text-center">Loading hospitals...</div>
+              ) : (
+                hospitals.map(h => <HospitalCard key={h.id || h._id} hospital={h} onViewDetails={handleViewHospital} />)
+              )}
             </div>
           )}
 
           {/* PHARMACIES GRID */}
           {activeTab === "Pharmacies" && (
-            <div className="mt-[16px] grid grid-cols-3 gap-[20px]">
-              {PHARMACIES.map(p => <PharmacyCard key={p.id} pharmacy={p} />)}
+            <div className="mt-[16px] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[20px]">
+              {loading ? (
+                <div className="py-8 text-[#6B4F3A] col-span-full text-center">Loading pharmacies...</div>
+              ) : (
+                pharmacies.map(p => <PharmacyCard key={p.id || p._id} pharmacy={p} />)
+              )}
             </div>
           )}
 
@@ -254,15 +266,15 @@ export default function HealthcareHome() {
       </div>
 
       {/* ═══════ ZONE 6 — EMERGENCY STRIP ═══════ */}
-      <div className="fixed bottom-0 left-0 w-full h-[56px] bg-[#C0392B] z-50 px-[48px] flex items-center justify-between max-w-[1440px] mx-auto" style={{left:"50%",transform:"translateX(-50%)"}}>
+      <div className="fixed bottom-0 left-0 w-full lg:h-[56px] py-[12px] lg:py-0 bg-[#C0392B] z-50 px-[24px] lg:px-[48px] flex flex-col lg:flex-row items-center justify-between gap-[12px] lg:gap-0 max-w-full mx-auto shadow-lg">
         <div className="flex items-center gap-[8px]">
           <AlertTriangle size={18} className="text-white" />
           <span className="font-mono-dm text-[12px] text-white uppercase tracking-[1px]">Medical Emergency?</span>
         </div>
-        <div className="flex items-center gap-[32px]">
-          <span className="font-mono-dm text-[13px] text-white font-semibold">Ambulance: 102</span>
-          <span className="font-mono-dm text-[13px] text-white font-semibold">National Emergency: 112</span>
-          <span className="font-mono-dm text-[13px] text-white font-semibold">Tourist Helpline: 1363</span>
+        <div className="flex items-center gap-[16px] md:gap-[32px] flex-wrap justify-center">
+          <span className="font-mono-dm text-[11px] sm:text-[13px] text-white font-semibold">Ambulance: 102</span>
+          <span className="font-mono-dm text-[11px] sm:text-[13px] text-white font-semibold">National Emergency: 112</span>
+          <span className="font-mono-dm text-[11px] sm:text-[13px] text-white font-semibold">Tourist Helpline: 1363</span>
         </div>
         <button className="h-[36px] px-[16px] rounded-[12px] bg-white text-[#C0392B] font-cabinet font-bold text-[14px] flex items-center gap-[6px]"><Phone size={14} /> Call Emergency 112</button>
       </div>
