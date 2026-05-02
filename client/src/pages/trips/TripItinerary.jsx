@@ -1,8 +1,10 @@
-import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { useSelector } from "react-redux";
-import { MapPin, Clock, Map as MapIcon, ChevronRight, Plus, Shield, CheckCircle2, Sun, GripVertical, AlertTriangle } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Link, useParams, useLocation } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { MapPin, Clock, Map as MapIcon, ChevronRight, Plus, Shield, CheckCircle2, Sun, GripVertical, AlertTriangle, Save, Download } from "lucide-react";
 import TopAppBar from "../../components/shared/TopAppBar";
+import { saveTrip, fetchTripById } from "../../store/tripSlice";
+import toast, { Toaster } from "react-hot-toast";
 
 const PHOTOS = {
   hero: 'https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=1440&q=80',
@@ -21,10 +23,62 @@ const ACTIVITIES = [
 const BUDGET = [{cat:'Accommodation',amt:'₹800'},{cat:'Activities',amt:'₹200'},{cat:'Food',amt:'₹900'},{cat:'Transport',amt:'₹0'}];
 
 export default function TripItinerary() {
+  const dispatch = useDispatch();
+  const { id } = useParams();
+  const location = useLocation();
   const { currentTrip, loading } = useSelector((state) => state.trip);
   const [activeDay, setActiveDay] = useState(1);
   const [checked, setChecked] = useState({});
   const [showMiniBar, setShowMiniBar] = useState(false);
+
+  // Performance Optimization: Memoize budget total
+  const budgetTotal = useMemo(() => {
+    return BUDGET.reduce((acc, curr) => {
+      const val = parseInt(curr.amt.replace('₹', '')) || 0;
+      return acc + val;
+    }, 0);
+  }, []);
+
+  // Performance Optimization: Memoize activities filtering for the active day
+  const filteredActivities = useMemo(() => {
+    // In a real app, this would filter currentTrip.itinerary[activeDay]
+    return ACTIVITIES;
+  }, [activeDay]);
+
+  // If currentTrip is not in Redux (e.g. page refresh), try fetching from DB
+  useEffect(() => {
+    if (!currentTrip && id && !loading) {
+      dispatch(fetchTripById(id));
+    }
+  }, [currentTrip, id, loading, dispatch]);
+
+  const [weatherData, setWeatherData] = useState(null);
+
+  useEffect(() => {
+    const fetchWeather = async () => {
+      if (!currentTrip?.location) return;
+      try {
+        const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(currentTrip.location)}&count=1&language=en&format=json`);
+        const geoData = await geoRes.json();
+        if (geoData.results && geoData.results.length > 0) {
+          const { latitude, longitude } = geoData.results[0];
+          const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,uv_index_max,sunrise,sunset&timezone=auto`);
+          const wData = await weatherRes.json();
+          if (wData.daily) {
+            setWeatherData({
+              temp: `${wData.daily.temperature_2m_max[0]}°C`,
+              uv: `UV: ${wData.daily.uv_index_max[0] > 7 ? 'High' : wData.daily.uv_index_max[0] > 3 ? 'Mod' : 'Low'}`,
+              sunrise: `Sunrise ${wData.daily.sunrise[0].split('T')[1]}`,
+              sunset: `Sunset ${wData.daily.sunset[0].split('T')[1]}`
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch weather", err);
+      }
+    };
+    fetchWeather();
+  }, [currentTrip]);
 
   useEffect(() => {
     const onScroll = () => setShowMiniBar(window.scrollY > 340);
@@ -33,6 +87,119 @@ export default function TripItinerary() {
   }, []);
 
   const toggleCheck = (i) => setChecked(p => ({...p, [i]: !p[i]}));
+
+  const handleSaveTrip = () => {
+    dispatch(saveTrip(currentTrip))
+      .unwrap()
+      .then(() => toast.success("Trip saved successfully!"))
+      .catch((err) => toast.error(err || "Failed to save trip"));
+  };
+
+  const downloadPDF = () => {
+    import('jspdf').then(({ jsPDF }) => {
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const pageW = doc.internal.pageSize.getWidth();
+      const margin = 15;
+      const usable = pageW - margin * 2;
+      let y = margin;
+
+      const checkPage = (needed = 12) => {
+        if (y + needed > doc.internal.pageSize.getHeight() - margin) {
+          doc.addPage();
+          y = margin;
+        }
+      };
+
+      const addLine = (text, size, style = 'normal', color = [30, 20, 16]) => {
+        doc.setFontSize(size);
+        doc.setFont('helvetica', style);
+        doc.setTextColor(...color);
+        const lines = doc.splitTextToSize(text, usable);
+        checkPage(lines.length * size * 0.45);
+        doc.text(lines, margin, y);
+        y += lines.length * size * 0.45 + 2;
+      };
+
+      // Title
+      addLine(currentTrip.tripTitle || 'My Itinerary', 22, 'bold', [232, 100, 12]);
+      addLine(currentTrip.location || '', 11, 'normal', [107, 79, 58]);
+      y += 2;
+
+      // Overview
+      if (currentTrip.overview) {
+        addLine(currentTrip.overview, 10, 'italic', [107, 79, 58]);
+        y += 4;
+      }
+
+      // Each Day
+      currentTrip.dailyItinerary.forEach(day => {
+        checkPage(20);
+        doc.setDrawColor(232, 100, 12);
+        doc.setLineWidth(0.5);
+        doc.line(margin, y, pageW - margin, y);
+        y += 6;
+
+        addLine(`Day ${day.day} — ${day.theme}`, 14, 'bold', [30, 20, 16]);
+        y += 2;
+
+        // Activities
+        day.activities.forEach((a, i) => {
+          checkPage(30);
+          addLine(`${a.time}  •  ${a.activity}`, 11, 'bold', [30, 20, 16]);
+          if (a.location) addLine(`📍 ${a.location}`, 9, 'normal', [232, 100, 12]);
+          if (a.description) addLine(a.description, 9, 'normal', [80, 70, 60]);
+          y += 3;
+        });
+
+        // Safety Notes
+        if (day.safetyNotes) {
+          checkPage(16);
+          addLine('⚠️ Safety Notes', 10, 'bold', [192, 57, 43]);
+          addLine(day.safetyNotes, 9, 'normal', [80, 70, 60]);
+          y += 3;
+        }
+
+        // Food Suggestions
+        if (day.foodSuggestions?.length) {
+          checkPage(14);
+          addLine('🍽️ Food Suggestions', 10, 'bold', [45, 106, 79]);
+          day.foodSuggestions.forEach(f => addLine(`  • ${f}`, 9, 'normal', [80, 70, 60]));
+          y += 4;
+        }
+      });
+
+      // Budget
+      if (currentTrip.estimatedCosts) {
+        checkPage(30);
+        doc.setDrawColor(232, 100, 12);
+        doc.line(margin, y, pageW - margin, y);
+        y += 6;
+        addLine('Estimated Budget', 14, 'bold', [30, 20, 16]);
+        if (currentTrip.estimatedCosts.breakdown) {
+          Object.entries(currentTrip.estimatedCosts.breakdown).forEach(([cat, amt]) => {
+            addLine(`${cat.charAt(0).toUpperCase() + cat.slice(1)}: ${amt}`, 10, 'normal', [80, 70, 60]);
+          });
+        }
+        addLine(`Total: ${currentTrip.estimatedCosts.total}`, 12, 'bold', [232, 100, 12]);
+        y += 4;
+      }
+
+      // Packing List
+      if (currentTrip.essentialPacking?.length) {
+        checkPage(20);
+        addLine('Essential Packing', 14, 'bold', [30, 20, 16]);
+        currentTrip.essentialPacking.forEach(item => addLine(`  ✓ ${item}`, 9, 'normal', [80, 70, 60]));
+      }
+
+      // Footer
+      checkPage(12);
+      y += 6;
+      addLine(`Generated by My Itinerary — ${new Date().toLocaleDateString()}`, 8, 'italic', [176, 152, 128]);
+
+      doc.save(`${(currentTrip.location || 'Trip').replace(/[^a-zA-Z0-9]/g, '_')}_Itinerary.pdf`);
+      toast.success("PDF downloaded successfully!");
+    });
+  };
 
   if (loading) {
     return (
@@ -64,6 +231,7 @@ export default function TripItinerary() {
 
   return (
     <div className="min-h-screen bg-[#FFF8F0]">
+      <Toaster />
       <TopAppBar variant="logo" />
 
       {/* Sticky Mini-Bar */}
@@ -73,7 +241,7 @@ export default function TripItinerary() {
             <span className="font-cabinet font-bold text-[15px] text-[#1E1410]">{currentTrip.tripTitle}</span>
             <span className="font-mono-dm text-[11px] text-[#B09880]">Day {activeDay} of {currentTrip.dailyItinerary.length}</span>
           </div>
-          <Link to="/trips/map" className="font-cabinet font-semibold text-[13px] text-[#E8640C]">View Map</Link>
+          <Link to={location.pathname.replace('itinerary', 'map')} className="font-cabinet font-semibold text-[13px] text-[#E8640C]">View Map</Link>
         </div>
       </div>
 
@@ -122,13 +290,15 @@ export default function TripItinerary() {
         </div>
 
         {/* Weather Strip */}
-        <div className="mt-[10px] h-[36px] bg-[#FEF3E2] border border-[#E8D5B7] rounded-[8px] px-[16px] flex items-center gap-[16px]">
-          <Sun size={14} className="text-[#F0A500]" fill="currentColor" />
-          {['34°C','UV: High','Sunrise 06:14','Sunset 19:42'].map(t => <span key={t} className="font-mono-dm text-[10px] text-[#6B4F3A]">{t}</span>)}
-        </div>
+        {weatherData && (
+          <div className="mt-[10px] h-[36px] bg-[#FEF3E2] border border-[#E8D5B7] rounded-[8px] px-[16px] flex items-center gap-[16px]">
+            <Sun size={14} className="text-[#F0A500]" fill="currentColor" />
+            {[weatherData.temp, weatherData.uv, weatherData.sunrise, weatherData.sunset].map((t, i) => <span key={i} className="font-mono-dm text-[10px] text-[#6B4F3A]">{t}</span>)}
+          </div>
+        )}
 
         {/* Two-column layout */}
-        <div className="mt-[28px] flex flex-col lg:flex-row gap-[48px]">
+        <div id="itinerary-content" className="flex flex-col lg:flex-row gap-[48px] mt-[48px]">
           {/* LEFT — Timeline */}
           <div className="flex-1 min-w-0">
             <p className="font-mono-dm text-[11px] text-[#B09880] uppercase tracking-[2px]">Day {activeDay} — {dayData.theme}</p>
@@ -167,7 +337,7 @@ export default function TripItinerary() {
                           <MapPin size={10} className="text-[#E8640C]" />
                           <p className="font-mono-dm text-[10px] text-[#E8640C] uppercase tracking-tight truncate">{a.location}</p>
                         </div>
-                        <p className="font-jakarta text-[13px] text-[#6B4F3A] leading-[1.5] mt-[6px] line-clamp-2">{a.description}</p>
+                        <p className="font-jakarta text-[13px] text-[#6B4F3A] leading-[1.5] mt-[6px]">{a.description}</p>
                       </div>
                     </div>
                   </div>
@@ -215,8 +385,11 @@ export default function TripItinerary() {
             </div>
             {/* Quick Actions */}
             <div className="flex flex-col gap-[8px]">
-              <Link to="/trips/jaisalmer/map" className="w-full h-[42px] rounded-[10px] bg-white border-[1.5px] border-[#E8640C] text-[#E8640C] font-cabinet font-semibold text-[13px] flex items-center justify-center gap-[6px]"><MapIcon size={14} /> View on Map</Link>
-              <button className="w-full h-[42px] rounded-[10px] bg-white border border-[#E8D5B7] text-[#6B4F3A] font-cabinet font-semibold text-[13px] flex items-center justify-center gap-[6px]"><Plus size={14} /> Add a Place</button>
+              {!currentTrip._id && (
+                <button onClick={handleSaveTrip} className="w-full h-[42px] rounded-[10px] bg-[#E8640C] text-white font-cabinet font-semibold text-[13px] flex items-center justify-center gap-[6px]"><Save size={14} /> Save Trip</button>
+              )}
+              <Link to={location.pathname.replace('itinerary', 'map')} className="w-full h-[42px] rounded-[10px] bg-white border-[1.5px] border-[#E8640C] text-[#E8640C] font-cabinet font-semibold text-[13px] flex items-center justify-center gap-[6px]"><MapIcon size={14} /> View on Map</Link>
+              <button onClick={downloadPDF} className="w-full h-[42px] rounded-[10px] bg-white border border-[#E8D5B7] text-[#6B4F3A] font-cabinet font-semibold text-[13px] flex items-center justify-center gap-[6px]"><Download size={14} /> Download PDF</button>
               <Link to="/safety/sos" className="w-full h-[42px] rounded-[10px] bg-[#C0392B] text-white font-cabinet font-semibold text-[13px] flex items-center justify-center gap-[6px]"><Shield size={14} /> SOS</Link>
             </div>
           </div>

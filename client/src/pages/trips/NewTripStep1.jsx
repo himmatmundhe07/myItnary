@@ -8,7 +8,7 @@ import { setTripStart, setTripSuccess, setTripFailure } from "../../store/tripSl
 import TopAppBar from "../../components/shared/TopAppBar";
 import { API_BASE_URL, GOOGLE_MAPS_API_KEY } from "../../config/env";
 
-const LIBRARIES = ['places'];
+const LIBRARIES = ['places', 'geometry'];
 
 const PHOTOS = {
   jaisalmer:'https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=200&q=80',
@@ -156,6 +156,30 @@ export default function NewTripStep1() {
       
       if (response.ok) {
         dispatch(setTripSuccess(data));
+
+        // Auto-save the trip to DB so it persists across page refreshes
+        const token = localStorage.getItem('token');
+        if (token) {
+          try {
+            const saveRes = await fetch(`${API_BASE_URL}/trips/save`, {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}` 
+              },
+              body: JSON.stringify(data)
+            });
+            if (saveRes.ok) {
+              const savedTrip = await saveRes.json();
+              dispatch(setTripSuccess(savedTrip)); // Update Redux with the saved version (includes _id)
+              navigate(`/trips/${savedTrip._id}/itinerary`);
+              return;
+            }
+          } catch (saveErr) {
+            console.error("Auto-save failed, proceeding without persistence:", saveErr);
+          }
+        }
+        // Fallback if not logged in or save failed
         navigate(`/trips/${Date.now()}/itinerary`); 
       } else {
         throw new Error(data.message || 'Failed to generate itinerary');
