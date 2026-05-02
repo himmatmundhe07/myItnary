@@ -15,7 +15,7 @@ export default function ProfileSidebar({ user, onOpenPhotoModal, onDeleteClick, 
   ];
 
   return (
-    <aside className="sticky top-[96px] w-[280px] shrink-0 bg-white border border-[#E8D5B7] rounded-[16px] p-[24px] shadow-[0_4px_16px_rgba(30,20,16,0.08)]">
+    <aside className="w-full lg:w-[280px] lg:sticky top-[96px] shrink-0 bg-white border border-[#E8D5B7] rounded-[16px] p-[24px] shadow-[0_4px_16px_rgba(30,20,16,0.08)] h-fit">
       {/* Profile Photo Block */}
       <div className="relative w-[100px] h-[100px] rounded-full border-[3px] border-[#E8D5B7] mx-auto">
         <img
