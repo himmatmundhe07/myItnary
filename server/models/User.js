@@ -35,7 +35,8 @@ const userSchema = new mongoose.Schema({
   identity: { type: String },
   emergencyContact: {
     name: { type: String },
-    phone: { type: String }
+    phone: { type: String },
+    email: { type: String }
   },
   medicalInfo: { type: String },
   locationEnabled: { type: Boolean, default: false },
