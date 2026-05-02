@@ -1,65 +1,22 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Plus, MoreHorizontal, Wallet, Users, Shield, MapPin, Map } from "lucide-react";
-
-const TRIPS_DATA = [
-  {
-    id: 1,
-    status: "Active",
-    name: "Jaisalmer Explorer",
-    location: "Jaisalmer, Rajasthan",
-    dates: "May 10–15, 2025",
-    daysCount: 5,
-    currentDay: 2,
-    budget: "₹15,000",
-    travelers: 2,
-    safetyScore: 87,
-    placesCount: 5,
-    updated: "May 11",
-    img: "https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=400&q=80"
-  },
-  {
-    id: 2,
-    status: "Upcoming",
-    name: "Coorg Monsoon Escape",
-    location: "Coorg, Karnataka",
-    dates: "May 28–31, 2025",
-    daysCount: 4,
-    budget: "₹18,000",
-    travelers: 2,
-    safetyScore: 91,
-    placesCount: 3,
-    updated: "May 9",
-    img: "https://images.unsplash.com/photo-1600000000000-000000000000?auto=format&fit=crop&w=400&q=80"
-  },
-  {
-    id: 3,
-    status: "Past",
-    name: "Hampi Weekend",
-    location: "Hampi, Karnataka",
-    dates: "Apr 4–6, 2025",
-    daysCount: 3,
-    budget: "₹12,000",
-    travelers: 1,
-    safetyScore: 82,
-    placesCount: 4,
-    updated: "Apr 7",
-    img: "https://images.unsplash.com/photo-1620766165457-a8025baa82e0?auto=format&fit=crop&w=400&q=80" // placeholder for hampi
-  }
-];
+import { useSelector, useDispatch } from "react-redux";
+import { fetchTrips } from "../../../store/tripSlice";
+import { Link } from "react-router-dom";
 
 const STATUS_TABS = ["All", "Active", "Upcoming", "Past"];
 
 function TripCard({ trip }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const isActive = trip.status === "Active";
-  const isUpcoming = trip.status === "Upcoming";
-  const isPast = trip.status === "Past";
+  const isActive = trip.status === "active";
+  const isUpcoming = trip.status === "upcoming";
+  const isPast = trip.status === "past";
 
   const getStatusBadge = () => {
     if (isActive) return (
       <div className="px-[10px] py-[4px] bg-[rgba(232,100,12,0.10)] border border-[rgba(232,100,12,0.20)] rounded-[6px] font-mono-dm text-[9px] text-[#E8640C] uppercase tracking-[1px] font-bold">
-        ACTIVE · DAY {trip.currentDay} OF {trip.daysCount}
+        ACTIVE · DAY 1 OF {trip.duration}
       </div>
     );
     if (isUpcoming) return (
@@ -79,8 +36,8 @@ function TripCard({ trip }) {
       {/* Left Image */}
       <div className="relative w-[200px] shrink-0">
         <img 
-          src={trip.img} 
-          alt={trip.name} 
+          src={trip.dailyItinerary?.[0]?.activities?.[0]?.photoUrl || "https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=400&q=80"} 
+          alt={trip.tripTitle} 
           className={`w-full h-full object-cover rounded-l-[16px] ${isPast ? 'grayscale-[30%] opacity-80' : ''}`} 
         />
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[rgba(255,255,255,0.6)] to-white opacity-100" style={{ background: 'linear-gradient(to right, rgba(255,255,255,0) 40%, rgba(255,255,255,1) 100%)' }} />
@@ -108,13 +65,13 @@ function TripCard({ trip }) {
 
         {/* Trip Info */}
         <div className="mt-[8px]">
-          <h3 className="font-display font-bold text-[24px] text-[#1E1410] leading-tight">{trip.name}</h3>
+          <h3 className="font-display font-bold text-[24px] text-[#1E1410] leading-tight">{trip.tripTitle}</h3>
           <div className="flex items-center gap-[6px] mt-[6px]">
             <span className="font-mono-dm text-[11px] text-[#6B4F3A] uppercase">{trip.location}</span>
             <span className="w-[1px] h-[10px] bg-[#E8D5B7]" />
-            <span className="font-mono-dm text-[11px] text-[#6B4F3A] uppercase">{trip.dates}</span>
+            <span className="font-mono-dm text-[11px] text-[#6B4F3A] uppercase">{trip.startDate ? new Date(trip.startDate).toLocaleDateString() : 'Dates Unknown'}</span>
             <span className="w-[1px] h-[10px] bg-[#E8D5B7]" />
-            <span className="font-mono-dm text-[11px] text-[#6B4F3A] uppercase">{trip.daysCount} Days</span>
+            <span className="font-mono-dm text-[11px] text-[#6B4F3A] uppercase">{trip.duration} Days</span>
           </div>
         </div>
 
@@ -124,12 +81,12 @@ function TripCard({ trip }) {
             <div className="w-full h-[4px] bg-[#E8D5B7] rounded-[100px] overflow-hidden">
               <div 
                 className="h-full bg-[#E8640C] rounded-[100px]" 
-                style={{ width: `${(trip.currentDay / trip.daysCount) * 100}%` }} 
+                style={{ width: `${(1 / trip.duration) * 100}%` }} 
               />
             </div>
             <div className="flex justify-between items-center mt-[4px]">
-              <span className="font-mono-dm text-[10px] text-[#B09880] uppercase">Day {trip.currentDay} of {trip.daysCount}</span>
-              <span className="font-mono-dm text-[10px] text-[#B09880] uppercase">{trip.daysCount - trip.currentDay + 1} days remaining</span>
+              <span className="font-mono-dm text-[10px] text-[#B09880] uppercase">Day 1 of {trip.duration}</span>
+              <span className="font-mono-dm text-[10px] text-[#B09880] uppercase">{trip.duration - 1} days remaining</span>
             </div>
           </div>
         )}
@@ -159,7 +116,7 @@ function TripCard({ trip }) {
               <Shield size={13} className="text-[#2D6A4F]" />
             </div>
             <div>
-              <p className="font-cabinet font-semibold text-[14px] text-[#2D6A4F] leading-none">{trip.safetyScore}</p>
+              <p className="font-cabinet font-semibold text-[14px] text-[#2D6A4F] leading-none">85</p>
               <p className="font-mono-dm text-[9px] text-[#B09880] uppercase mt-[2px]">Safety Score</p>
             </div>
           </div>
@@ -168,15 +125,15 @@ function TripCard({ trip }) {
               <MapPin size={13} className="text-[#E8640C]" />
             </div>
             <div>
-              <p className="font-cabinet font-semibold text-[14px] text-[#1E1410] leading-none">{trip.placesCount}</p>
-              <p className="font-mono-dm text-[9px] text-[#B09880] uppercase mt-[2px]">Places</p>
+              <p className="font-cabinet font-semibold text-[14px] text-[#1E1410] leading-none">{trip.dailyItinerary?.length || 0}</p>
+              <p className="font-mono-dm text-[9px] text-[#B09880] uppercase mt-[2px]">Days Planned</p>
             </div>
           </div>
         </div>
 
         {/* Action Row */}
         <div className="mt-[14px] pt-[12px] border-t border-[#F5EDE0] flex items-center justify-between">
-          <span className="font-mono-dm text-[10px] text-[#B09880] uppercase tracking-[0.5px]">Last updated {trip.updated}</span>
+          <span className="font-mono-dm text-[10px] text-[#B09880] uppercase tracking-[0.5px]">Last updated {new Date(trip.updatedAt).toLocaleDateString()}</span>
           <div className="flex gap-[8px]">
             {isPast ? (
               <>
@@ -206,12 +163,19 @@ function TripCard({ trip }) {
 }
 
 export default function MyTripsTab() {
+  const dispatch = useDispatch();
   const [activeTab, setActiveTab] = useState("All");
-  const trips = TRIPS_DATA;
+  const { trips, loading } = useSelector((state) => state.trip);
+
+  useEffect(() => {
+    dispatch(fetchTrips());
+  }, [dispatch]);
 
   const filteredTrips = activeTab === "All" 
     ? trips 
-    : trips.filter(t => t.status === activeTab);
+    : trips.filter(t => (t.status || 'upcoming').toLowerCase() === activeTab.toLowerCase());
+
+  if (loading) return <div className="py-8 text-center text-[#6B4F3A]">Loading trips...</div>;
 
   if (trips.length === 0) {
     return (
@@ -235,10 +199,10 @@ export default function MyTripsTab() {
         <span className="font-jakarta text-[13px] text-[#B09880]">
           {trips.length} trips
         </span>
-        <button className="h-[40px] px-[20px] rounded-[10px] bg-[#E8640C] text-white font-cabinet font-semibold text-[14px] shadow-[0_4px_16px_rgba(232,100,12,0.22)] flex items-center gap-[6px] hover:bg-[#D55A0A] transition-all">
+        <Link to="/trips/new" className="h-[40px] px-[20px] rounded-[10px] bg-[#E8640C] text-white font-cabinet font-semibold text-[14px] shadow-[0_4px_16px_rgba(232,100,12,0.22)] flex items-center gap-[6px] hover:bg-[#D55A0A] transition-all">
           <Plus size={14} className="text-white" />
           New Trip
-        </button>
+        </Link>
       </div>
 
       {/* Filter Tabs */}
