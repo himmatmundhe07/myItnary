@@ -1,77 +1,12 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Bookmark, MapPin, Plus, ArrowRight, ChevronDown } from "lucide-react";
+import { useSelector } from "react-redux";
 
-const SAMPLE_TRIPS = [
-  { id: 1, name: "Jaisalmer Explorer", dates: "May 10–15", img: "https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=100&q=80" },
-  { id: 2, name: "Coorg Escape", dates: "May 28–31", img: "https://images.unsplash.com/photo-1600000000000-000000000000?auto=format&fit=crop&w=100&q=80" } // placeholder
-];
-
-const PLACES_DATA = [
-  {
-    id: 1,
-    name: "Ranakpur Jain Temple",
-    location: "Sadri, Rajasthan",
-    desc: "One of the most spectacular temples in India with 1,444 uniquely carved marble pillars.",
-    vibes: ["Heritage", "Spiritual"],
-    date: "May 9",
-    category: "Hidden Gems",
-    img: "https://images.unsplash.com/photo-1588691509377-ecf83656c071?auto=format&fit=crop&w=400&q=80"
-  },
-  {
-    id: 2,
-    name: "Majuli Island",
-    location: "Assam, Northeast India",
-    desc: "The world's largest river island, home to Vaishnavite monasteries and Mising tribal culture.",
-    vibes: ["Sacred", "Vanishing"],
-    date: "May 7",
-    category: "Hidden Gems",
-    img: "https://images.unsplash.com/photo-1605389658253-3d0d8dae7786?auto=format&fit=crop&w=400&q=80"
-  },
-  {
-    id: 3,
-    name: "Tungnath Temple, Chopta",
-    location: "Uttarakhand",
-    desc: "The highest Shiva temple in the world, accessible via a 3.5 km forest trek from Chopta.",
-    vibes: ["Spiritual", "Mountains"],
-    date: "May 5",
-    category: "Hidden Gems",
-    img: "https://images.unsplash.com/photo-1623910271032-47407e3a35a2?auto=format&fit=crop&w=400&q=80"
-  },
-  {
-    id: 4,
-    name: "Raniji ki Baori",
-    location: "Bundi, Rajasthan",
-    desc: "An 18th-century stepwell with intricate sculptures of gods and apsaras, largely unknown to tourists.",
-    vibes: ["Architecture", "Offbeat"],
-    date: "Apr 28",
-    category: "Hidden Gems",
-    img: "https://images.unsplash.com/photo-1518002054494-3a6f94352e9d?auto=format&fit=crop&w=400&q=80"
-  },
-  {
-    id: 5,
-    name: "Ziro Valley",
-    location: "Arunachal Pradesh",
-    desc: "A UNESCO World Heritage Site candidate known for the Apatani tribe and the Ziro Music Festival.",
-    vibes: ["Tribal", "Nature"],
-    date: "Apr 22",
-    category: "Hidden Gems",
-    img: "https://images.unsplash.com/photo-1531200424560-63ce71d198bf?auto=format&fit=crop&w=400&q=80"
-  },
-  {
-    id: 6,
-    name: "Pottery Workshop with Local Artisan",
-    location: "Jaipur, Rajasthan",
-    desc: "A hands-on pottery experience with a third-generation Jaipur artisan — 3 hours, ₹1,200.",
-    vibes: ["Workshop", "Cultural"],
-    date: "Apr 18",
-    category: "Experiences",
-    img: "https://images.unsplash.com/photo-1610701596007-11502861dcfa?auto=format&fit=crop&w=400&q=80"
-  }
-];
+const PLACES_DATA = [];
 
 const CATEGORIES = ["All", "Hidden Gems", "Experiences", "Healthcare", "Restaurants", "Hotels"];
 
-function AddToTripDropdown({ onClose }) {
+function AddToTripDropdown({ onClose, trips }) {
   const ref = useRef(null);
   
   useEffect(() => {
@@ -91,12 +26,12 @@ function AddToTripDropdown({ onClose }) {
       </div>
       <div className="h-[1px] bg-[#E8D5B7] w-full" />
       
-      {SAMPLE_TRIPS.map(trip => (
-        <button key={trip.id} onClick={onClose} className="w-full h-[44px] px-[16px] flex items-center hover:bg-[#FEF3E2] transition-colors group">
-          <img src={trip.img} alt={trip.name} className="w-[36px] h-[36px] rounded-[6px] object-cover shrink-0" />
+      {trips.map(trip => (
+        <button key={trip._id} onClick={onClose} className="w-full h-[44px] px-[16px] flex items-center hover:bg-[#FEF3E2] transition-colors group">
+          <img src={trip.dailyItinerary?.[0]?.activities?.[0]?.photoUrl || "https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=100&q=80"} alt={trip.tripTitle} className="w-[36px] h-[36px] rounded-[6px] object-cover shrink-0" />
           <div className="ml-[10px] flex-1 text-left">
-            <p className="font-cabinet font-semibold text-[13px] text-[#1E1410] leading-tight truncate">{trip.name}</p>
-            <p className="font-mono-dm text-[10px] text-[#B09880] mt-[2px]">{trip.dates}</p>
+            <p className="font-cabinet font-semibold text-[13px] text-[#1E1410] leading-tight truncate">{trip.tripTitle}</p>
+            <p className="font-mono-dm text-[10px] text-[#B09880] mt-[2px]">{trip.startDate ? new Date(trip.startDate).toLocaleDateString() : 'Dates unknown'}</p>
           </div>
           <Plus size={16} className="text-[#B09880] group-hover:text-[#E8640C]" />
         </button>
@@ -111,6 +46,7 @@ function AddToTripDropdown({ onClose }) {
 }
 
 export default function SavedPlacesTab() {
+  const { trips } = useSelector((state) => state.trip);
   const [activeFilter, setActiveFilter] = useState("All");
   const [places, setPlaces] = useState(PLACES_DATA);
   const [dropdownOpenId, setDropdownOpenId] = useState(null);
@@ -235,7 +171,7 @@ export default function SavedPlacesTab() {
                 </button>
 
                 {dropdownOpenId === place.id && (
-                  <AddToTripDropdown onClose={() => setDropdownOpenId(null)} />
+                  <AddToTripDropdown onClose={() => setDropdownOpenId(null)} trips={trips} />
                 )}
               </div>
             </div>

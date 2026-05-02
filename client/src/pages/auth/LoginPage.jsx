@@ -2,18 +2,17 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { AuthLayout } from "../../components/layout/AuthLayout";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useFormik } from "formik";
+import * as Yup from "yup";
 import { useGoogleLogin } from '@react-oauth/google';
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { loginStart, loginSuccess, loginFailure } from "../../store/authSlice";
 import { API_BASE_URL, GOOGLE_OAUTH_CLIENT_ID } from "../../config/env";
-import * as z from "zod";
 
-const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address."),
-  password: z.string().min(1, "Password is required."),
+const loginSchema = Yup.object().shape({
+  email: Yup.string().email("Please enter a valid email address.").required("Email is required"),
+  password: Yup.string().required("Password is required."),
 });
 
 const GoogleIcon = () => (
@@ -63,45 +62,41 @@ export default function LoginPage() {
     }
   }, [isAuthenticated, navigate]);
 
-
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm({
-    resolver: zodResolver(loginSchema),
-  });
-
-  const onSubmit = async (data) => {
-    try {
-      setError("");
-      dispatch(loginStart());
-      const res = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      const resData = await res.json().catch(() => ({ message: "Server returned a non-JSON response" }));
-      if (res.ok) {
-        dispatch(loginSuccess({ user: resData, token: resData.token }));
-        navigate('/home');
-      } else {
-        const errorMsg = resData?.message || 'Invalid email or password. Please try again.';
+  const formik = useFormik({
+    initialValues: {
+      email: "",
+      password: "",
+    },
+    validationSchema: loginSchema,
+    onSubmit: async (values, { setSubmitting }) => {
+      try {
+        setError("");
+        dispatch(loginStart());
+        const res = await fetch(`${API_BASE_URL}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(values),
+        });
+        const resData = await res.json().catch(() => ({ message: "Server returned a non-JSON response" }));
+        if (res.ok) {
+          dispatch(loginSuccess({ user: resData, token: resData.token }));
+          navigate('/home');
+        } else {
+          const errorMsg = resData?.message || 'Invalid email or password. Please try again.';
+          dispatch(loginFailure(errorMsg));
+          setError(errorMsg);
+        }
+      } catch (err) {
+        console.error('Login error:', err);
+        const errorMsg = 'Unable to connect to the server. Please check your internet connection and try again.';
         dispatch(loginFailure(errorMsg));
         setError(errorMsg);
+      } finally {
+        setSubmitting(false);
       }
-    } catch (err) {
-      console.error('Login error:', err);
-      // Server unreachable — allow demo mode navigation
-      console.warn('Backend unreachable, entering demo mode:', err.message);
-      dispatch(loginSuccess({
-        user: { fullName: data.email.split('@')[0], email: data.email },
-        token: 'demo-token',
-      }));
-      navigate('/home');
-    }
-  };
+    },
+  });
+
 
 
   const TopRightLink = (
@@ -139,7 +134,7 @@ export default function LoginPage() {
       <div className="h-[1px] w-full bg-sand"></div>
       <div className="h-[24px]"></div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
+      <form onSubmit={formik.handleSubmit} className="flex flex-col gap-6">
         <div className="relative">
           <label className="block font-cabinet font-medium text-[13px] text-charcoal uppercase tracking-wide mb-2">
             EMAIL ADDRESS
@@ -150,19 +145,22 @@ export default function LoginPage() {
             </div>
             <input
               type="email"
+              name="email"
               placeholder="you@example.com"
-              {...register("email")}
+              value={formik.values.email}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
               className={`w-full h-[52px] pl-11 pr-4 rounded-[10px] border-[1.5px] bg-white font-jakarta text-[15px] outline-none transition-all duration-200
                 ${
-                  errors.email
+                  formik.touched.email && formik.errors.email
                     ? "border-sindoor focus:border-sindoor"
                     : "border-sand focus:border-saffron focus:shadow-[0_0_0_4px_rgba(232,100,12,0.15)]"
                 }`}
             />
           </div>
-          {errors.email && (
+          {formik.touched.email && formik.errors.email && (
             <p className="mt-1.5 text-[13px] font-jakarta text-sindoor">
-              {errors.email.message}
+              {formik.errors.email}
             </p>
           )}
         </div>
@@ -182,11 +180,14 @@ export default function LoginPage() {
             </div>
             <input
               type={showPassword ? "text" : "password"}
+              name="password"
               placeholder="Enter your password"
-              {...register("password")}
+              value={formik.values.password}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
               className={`w-full h-[52px] pl-11 pr-11 rounded-[10px] border-[1.5px] bg-white font-jakarta text-[15px] outline-none transition-all duration-200
                 ${
-                  errors.password
+                  formik.touched.password && formik.errors.password
                     ? "border-sindoor focus:border-sindoor"
                     : "border-sand focus:border-saffron focus:shadow-[0_0_0_4px_rgba(232,100,12,0.15)]"
                 }`}
@@ -203,19 +204,19 @@ export default function LoginPage() {
               )}
             </button>
           </div>
-          {errors.password && (
+          {formik.touched.password && formik.errors.password && (
             <p className="mt-1.5 text-[13px] font-jakarta text-sindoor">
-              {errors.password.message}
+              {formik.errors.password}
             </p>
           )}
         </div>
 
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={formik.isSubmitting}
           className="w-full h-[52px] mt-2 bg-saffron hover:bg-[#F07020] text-white font-cabinet font-semibold text-base rounded-[10px] shadow-[0_4px_16px_rgba(232,100,12,0.30)] hover:shadow-[0_6px_20px_rgba(232,100,12,0.40)] transition-all duration-200 disabled:bg-sand disabled:text-[#B09880] disabled:shadow-none flex items-center justify-center"
         >
-          {isSubmitting ? (
+          {formik.isSubmitting ? (
             <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -252,11 +253,9 @@ export default function LoginPage() {
                   setError(data?.message || 'Google authentication failed');
                 }
               } catch (err) {
-                dispatch(loginSuccess({
-                  user: { fullName: 'Google User', email: 'user@gmail.com' },
-                  token: 'demo-google-token',
-                }));
-                navigate('/home');
+                console.error('Google login error:', err);
+                setError('Google login failed. Unable to connect to the authentication server.');
+                dispatch(loginFailure('Google authentication unreachable.'));
               }
             }}
             onError={() => setError('Google Authentication failed.')}
