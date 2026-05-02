@@ -2,17 +2,35 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Car, Bus, Footprints, MapPin, Map } from "lucide-react";
 import TopAppBar from "../../components/shared/TopAppBar";
-import { DOCTORS } from "./data";
 import { SuccessHero, ConfirmationCard } from "./components/ConfirmationComponents";
+import { API_BASE_URL } from "../../config/env";
 import { RequirementCard, ActionCard, ImportantNotes } from "./components/ConfirmationActionComponents";
 
 export default function Confirmation() {
   const navigate = useNavigate();
-  const [doctor, setDoctor] = useState(DOCTORS[0]);
+  const [doctor, setDoctor] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const fetchDoctor = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(`${API_BASE_URL}/healthcare/doctors`);
+        if (res.ok) {
+          const data = await res.json();
+          setDoctor(data[0]); // fallback to first doctor
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDoctor();
     window.scrollTo(0, 0);
   }, []);
+
+  if (loading || !doctor) return <div className="min-h-screen bg-[#FFF8F0] pt-[120px] text-center">Loading confirmation...</div>;
 
   return (
     <div className="min-h-screen bg-[#FFF8F0] pb-[64px] print:bg-white print:pb-0">

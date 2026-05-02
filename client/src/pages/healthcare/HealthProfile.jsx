@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { Pencil, Share2, Check, X, Plus, Upload, Heart, Stethoscope, ChevronRight, ArrowRight, Pill, AlertTriangle, FileText, Search } from "lucide-react";
 import TopAppBar from "../../components/shared/TopAppBar";
-import { USER_HEALTH_DATA } from "./data";
 import { ProfileSummaryCard, ConditionCard, MedicationRow, AllergyTag } from "./components/ProfileDetailComponents";
 import { ConsultationRow, DocumentCard, HealthSnapshot, ShareDoctorBlock, PrivacyNotice, QuickActions } from "./components/ProfileSideComponents";
 
@@ -14,11 +13,11 @@ export default function HealthProfile() {
   
   // Initialize state from localStorage or empty
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem(`health_data_${authUser?.name || 'guest'}`);
+    const saved = localStorage.getItem(`health_data_${authUser?.fullName || authUser?.name || 'guest'}`);
     if (saved) return JSON.parse(saved);
     
     return {
-      name: authUser?.name || "Guest",
+      name: authUser?.fullName || authUser?.name || "Guest",
       age: "--",
       gender: "Not specified",
       bloodGroup: "--",
@@ -50,8 +49,8 @@ export default function HealthProfile() {
   const [showEditEmergency, setShowEditEmergency] = useState(null); // id of contact being edited
 
   useEffect(() => {
-    if (authUser?.name && user.name === "Guest") {
-      setUser(prev => ({ ...prev, name: authUser.name }));
+    if ((authUser?.fullName || authUser?.name) && user.name === "Guest") {
+      setUser(prev => ({ ...prev, name: authUser.fullName || authUser.name }));
     }
   }, [authUser]);
 
@@ -67,7 +66,7 @@ export default function HealthProfile() {
     setSaving(true);
     setTimeout(() => {
       // Save to localStorage
-      localStorage.setItem(`health_data_${authUser?.name || 'guest'}`, JSON.stringify(user));
+      localStorage.setItem(`health_data_${authUser?.fullName || authUser?.name || 'guest'}`, JSON.stringify(user));
       
       setSaving(false);
       setIsEdit(false);
@@ -136,10 +135,16 @@ export default function HealthProfile() {
   const handleDeleteAll = () => {
     if (window.confirm("Are you sure you want to delete all your health data? This cannot be undone.")) {
       setUser({
-        ...USER_HEALTH_DATA,
+        name: authUser?.fullName || authUser?.name || "Guest",
+        age: "--",
+        gender: "Not specified",
+        bloodGroup: "--",
+        dob: "--",
+        languages: [],
         conditions: [],
         medications: [],
         allergies: [],
+        consultations: [],
         documents: [],
         emergencyContacts: []
       });
@@ -179,7 +184,7 @@ export default function HealthProfile() {
 
       <div className="max-w-[1100px] mx-auto px-[24px]">
         {/* TOP IDENTITY ROW */}
-        <div className="pt-[40px] flex justify-between items-center print:hidden">
+        <div className="pt-[40px] flex flex-col md:flex-row justify-between items-start md:items-center gap-[16px] md:gap-0 print:hidden">
           <div>
             <p className="font-mono-dm text-[11px] text-[#B09880] uppercase tracking-[3px]">My Health Profile</p>
             <h1 className="mt-[6px] font-display font-bold text-[32px] text-[#1E1410]">{user.name}</h1>
@@ -209,7 +214,7 @@ export default function HealthProfile() {
           </div>
         </div>
 
-        <div className="mt-[32px] flex gap-[40px]">
+        <div className="mt-[32px] flex flex-col lg:flex-row gap-[40px]">
           {/* LEFT COLUMN */}
           <div className="flex-1 space-y-[28px]">
             
@@ -434,7 +439,7 @@ export default function HealthProfile() {
           </div>
 
           {/* RIGHT COLUMN */}
-          <div className="w-[300px] shrink-0 space-y-[16px] sticky top-[96px] h-fit print:hidden">
+          <div className="w-full lg:w-[300px] shrink-0 space-y-[16px] lg:sticky top-[96px] h-fit print:hidden">
             <HealthSnapshot user={user} onPrint={handlePrint} />
             <ShareDoctorBlock />
             <PrivacyNotice />
