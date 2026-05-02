@@ -64,7 +64,6 @@ const Home = () => {
             <C1_WelcomeHero />
             <C2_HowItWorks />
             <C3_SafetySnapshot />
-            <C4_HiddenGems />
             <C5_Trending />
           </section>
           <aside className="w-full lg:sticky lg:top-[104px] flex flex-col pt-4 lg:pt-0 pb-4">
@@ -288,35 +287,7 @@ const C3_SafetySnapshot = () => (
   </div>
 );
 
-const C4_HiddenGems = () => {
-  const gems = [
-    { img:PHOTOS.ranakpur, dist:"65 km away", title:"Ranakpur Temple", loc:"Sadri, Rajasthan", tags:["Heritage","Spiritual"] },
-    { img:PHOTOS.kumbhalgarh, dist:"85 km away", title:"Kumbhalgarh Fort", loc:"Rajsamand, Rajasthan", tags:["Heritage","Trekking"] },
-    { img:PHOTOS.bundi, dist:"140 km away", title:"Raniji ki Baori", loc:"Bundi, Rajasthan", tags:["Architecture","Offbeat"] }
-  ];
-  return (
-    <div className="mt-[28px]">
-      <div className="flex justify-between items-end sm:items-center">
-        <div><SectionLabel>Hidden Gems Near Udaipur</SectionLabel><p className="font-jakarta text-[12px] text-[#B09880] mt-0.5">Based on your current location in Udaipur</p></div>
-        <Link to="/explore" className="flex items-center gap-1 group mb-1 sm:mb-0"><span className="font-cabinet font-medium text-[12px] text-[#E8640C]">Explore All</span><ChevronRight size={12} className="text-[#E8640C] group-hover:translate-x-0.5 transition-transform"/></Link>
-      </div>
-      <div className="mt-[14px] flex gap-[12px] overflow-x-auto pb-4 scrollbar-none snap-x">
-        {gems.map((g,i) => (
-          <div key={i} className="flex-1 min-w-[240px] h-[200px] rounded-[16px] overflow-hidden relative shadow-[0_4px_16px_rgba(30,20,16,0.10)] group cursor-pointer hover:scale-[1.015] transition-all snap-center">
-            <img src={g.img} alt={`Hidden Gem: ${g.title} in ${g.loc}`} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
-            <div className="absolute bottom-[16px] left-[16px] right-[16px]">
-              <p className="font-mono-dm text-[10px] text-white/70 uppercase">{g.dist}</p>
-              <h4 className="font-display font-bold text-[18px] text-white leading-tight mt-0.5">{g.title}</h4>
-              <p className="font-mono-dm text-[11px] text-white/60 mt-0.5">{g.loc}</p>
-              <div className="mt-2 flex gap-1.5">{g.tags.map((t,j) => <span key={j} className="px-1.5 py-0.5 rounded bg-white/15 border border-white/30 font-mono-dm text-[10px] text-white backdrop-blur-sm">{t}</span>)}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
+
 
 const C5_Trending = () => {
   const trending = [
