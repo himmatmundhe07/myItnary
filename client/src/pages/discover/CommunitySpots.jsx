@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { X, ThumbsUp, Bookmark, MapPin, ChevronDown, Upload, Camera, Info } from "lucide-react";
+import { useState, useRef } from "react";
+import { X, ThumbsUp, Bookmark, MapPin, ChevronDown, Upload, Camera, Info, Loader2, Trash2 } from "lucide-react";
 import TopAppBar from "../../components/shared/TopAppBar";
+import toast, { Toaster } from "react-hot-toast";
 
 /* ================================================================
    PAGE 5 — Community Spots + Submit a Hidden Gem (Split-Panel)
@@ -100,6 +101,54 @@ export default function CommunitySpots() {
   const [toMonth, setToMonth] = useState("");
   const [tip, setTip] = useState("");
   const [photos, setPhotos] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const handlePhotoUpload = (e) => {
+    const files = Array.from(e.target.files);
+    if (photos.length + files.length > 5) {
+      toast.error("You can only upload up to 5 photos.");
+      return;
+    }
+
+    const newPhotos = files.map(file => ({
+      file,
+      url: URL.createObjectURL(file)
+    }));
+
+    setPhotos(prev => [...prev, ...newPhotos]);
+    toast.success(`${files.length} photo(s) added.`);
+  };
+
+  const removePhoto = (index) => {
+    setPhotos(prev => {
+      const newArr = [...prev];
+      URL.revokeObjectURL(newArr[index].url);
+      newArr.splice(index, 1);
+      return newArr;
+    });
+  };
+
+  const handleSubmit = async () => {
+    if (!placeName || !city || !state || !desc || selType.length === 0) {
+      toast.error("Please fill in all required fields.");
+      return;
+    }
+
+    setLoading(true);
+    // Simulate API call
+    try {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      toast.success("Hidden gem submitted successfully! It will be reviewed soon.");
+      setDrawerOpen(false);
+      // Reset form
+      setPlaceName(""); setCity(""); setState(""); setSelType([]); setDesc(""); setVibes([]); setFromMonth(""); setToMonth(""); setTip(""); setPhotos([]);
+    } catch (err) {
+      toast.error("Failed to submit. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const toggleArr = (arr, set, val, max) => {
     if (arr.includes(val)) set(arr.filter(v => v !== val));
@@ -109,6 +158,7 @@ export default function CommunitySpots() {
   return (
     <div className="min-h-screen bg-[#FFF8F0]">
       <TopAppBar variant="logo" />
+      <Toaster position="top-right" />
 
       {/* ---- MAIN CONTENT ---- */}
       <div className="pt-[64px]" style={{marginRight: drawerOpen ? "512px" : "0", transition:"margin 0.3s ease"}}>
@@ -122,7 +172,7 @@ export default function CommunitySpots() {
               <p className="font-jakarta text-[16px] text-[#6B4F3A] leading-[1.6] mt-[12px] max-w-[480px]">Every place here was submitted by someone who actually visited it. Not a guidebook. Not a blog. Real people, real places.</p>
               <div className="mt-[24px] flex gap-[12px]">
                 <button onClick={() => setDrawerOpen(true)} className="h-[48px] px-[28px] rounded-[12px] bg-[#E8640C] text-white font-cabinet font-semibold text-[14px]">Submit a Hidden Gem</button>
-                <button className="h-[48px] px-[28px] rounded-[12px] border-[1.5px] border-[#E8640C] text-[#E8640C] font-cabinet font-semibold text-[14px]">View All Spots</button>
+                <button onClick={() => setActiveCat("All")} className="h-[48px] px-[28px] rounded-[12px] border-[1.5px] border-[#E8640C] text-[#E8640C] font-cabinet font-semibold text-[14px]">View All Spots</button>
               </div>
             </div>
             <div className="flex flex-col items-end gap-[16px] pt-[12px]">
@@ -180,7 +230,12 @@ export default function CommunitySpots() {
             <input value={city} onChange={e => setCity(e.target.value)} placeholder="e.g., Chopta" className="flex-1 h-[48px] rounded-[10px] border-[1.5px] border-[#E8D5B7] px-[14px] font-jakarta text-[14px] text-[#1E1410] placeholder:text-[#B09880] focus:border-[#E8640C] focus:outline-none" />
             <input value={state} onChange={e => setState(e.target.value)} placeholder="e.g., Uttarakhand" className="flex-1 h-[48px] rounded-[10px] border-[1.5px] border-[#E8D5B7] px-[14px] font-jakarta text-[14px] text-[#1E1410] placeholder:text-[#B09880] focus:border-[#E8640C] focus:outline-none" />
           </div>
-          <button className="mt-[8px] flex items-center gap-[6px] font-cabinet font-medium text-[13px] text-[#E8640C]"><MapPin size={13} /> Or pick location on map</button>
+          <button 
+            onClick={() => toast.success("Map picker coming soon! For now, please enter the city and state manually.")}
+            className="mt-[8px] flex items-center gap-[6px] font-cabinet font-medium text-[13px] text-[#E8640C]"
+          >
+            <MapPin size={13} /> Or pick location on map
+          </button>
         </div>
 
         {/* C — Category */}
@@ -239,17 +294,50 @@ export default function CommunitySpots() {
         <div className="mt-[20px]">
           <label className="font-mono-dm text-[10px] text-[#B09880] uppercase tracking-[2px]">Upload Photos</label>
           <p className="font-jakarta text-[12px] text-[#B09880] mt-[2px]">Real photos only. No filters, no AI images. Max 5 photos, 5MB each.</p>
-          <div className="mt-[8px] border-[2px] border-dashed border-[#E8D5B7] rounded-[12px] bg-[#FAFAF8] p-[28px] text-center cursor-pointer hover:border-[#E8640C] transition-colors">
+          
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handlePhotoUpload} 
+            multiple 
+            accept="image/*" 
+            className="hidden" 
+          />
+
+          <div 
+            onClick={() => fileInputRef.current?.click()}
+            className="mt-[8px] border-[2px] border-dashed border-[#E8D5B7] rounded-[12px] bg-[#FAFAF8] p-[28px] text-center cursor-pointer hover:border-[#E8640C] transition-colors"
+          >
             <Upload size={32} className="text-[#B09880] mx-auto" />
             <p className="font-cabinet font-medium text-[14px] text-[#6B4F3A] mt-[8px]">Drop photos here or click to upload</p>
             <p className="font-jakarta text-[12px] text-[#B09880] mt-[4px]">JPG, PNG up to 5MB each</p>
           </div>
+
+          {photos.length > 0 && (
+            <div className="mt-[12px] flex gap-[8px] flex-wrap">
+              {photos.map((p, i) => (
+                <div key={i} className="relative w-[60px] h-[60px] rounded-[8px] overflow-hidden group">
+                  <img src={p.url} className="w-full h-full object-cover" alt="Preview" />
+                  <button 
+                    onClick={() => removePhoto(i)}
+                    className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Trash2 size={16} className="text-white" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Live Preview */}
         <div className="mt-[24px] bg-white border border-[#E8D5B7] rounded-[14px] overflow-hidden shadow-[0_4px_16px_rgba(30,20,16,0.08)]">
-          <div className="h-[160px] bg-[#FEF3E2] flex items-center justify-center">
-            <Camera size={32} className="text-[#E8D5B7]" />
+          <div className="h-[160px] bg-[#FEF3E2] flex items-center justify-center relative">
+            {photos.length > 0 ? (
+              <img src={photos[0].url} className="w-full h-full object-cover" alt="Preview Hero" />
+            ) : (
+              <Camera size={32} className="text-[#E8D5B7]" />
+            )}
           </div>
           <div className="p-[14px]">
             <h4 className="font-cabinet font-bold text-[16px] text-[#1E1410]">{placeName || "Place name"}</h4>
@@ -270,7 +358,17 @@ export default function CommunitySpots() {
         </div>
 
         {/* Submit */}
-        <button className="mt-[20px] w-full h-[52px] rounded-[12px] bg-[#E8640C] text-white font-cabinet font-semibold text-[15px]">Submit Hidden Gem</button>
+        <button 
+          onClick={handleSubmit}
+          disabled={loading}
+          className="mt-[20px] w-full h-[52px] rounded-[12px] bg-[#E8640C] text-white font-cabinet font-semibold text-[15px] flex items-center justify-center gap-2 hover:brightness-105 disabled:opacity-70 disabled:cursor-not-allowed transition-all"
+        >
+          {loading ? (
+            <><Loader2 size={20} className="animate-spin" /> Submitting...</>
+          ) : (
+            "Submit Hidden Gem"
+          )}
+        </button>
         <p className="font-jakarta text-[12px] text-[#B09880] text-center mt-[10px]">Your submission will be reviewed within 48 hours before it goes live.</p>
         <div className="h-[32px]" />
       </div>
