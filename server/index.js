@@ -7,6 +7,8 @@ import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import googleRoutes from './routes/googleRoutes.js';
 import tripRoutes from './routes/tripRoutes.js';
+import healthcareRoutes from './routes/healthcareRoutes.js';
+import sosRoutes from './routes/sosRoutes.js';
 
 dotenv.config();
 
@@ -16,7 +18,8 @@ app.set('trust proxy', 1);
 
 
 // Middleware
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cors({
   origin: process.env.CORS_ORIGIN?.split(",").map((origin) => origin.trim()) || "*",
   credentials: true,
@@ -31,6 +34,8 @@ app.use(morgan('dev'));
 app.use('/api/auth', authRoutes);
 app.use('/api/google', googleRoutes);
 app.use('/api/trips', tripRoutes);
+app.use('/api/healthcare', healthcareRoutes);
+app.use('/api/sos', sosRoutes);
 
 app.get('/', (req, res) => {
   res.send('API is running...');
