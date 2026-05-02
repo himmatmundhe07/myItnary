@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { useParams, Link, useLocation } from "react-router-dom";
 import { ChevronRight, CheckCircle2, MapPin, Map, Star, ArrowRight } from "lucide-react";
 import TopAppBar from "../../components/shared/TopAppBar";
-import { DOCTORS } from "./data";
 import { DoctorHeroCard, ConsultationInfo, ReviewCard } from "./components/ProfileComponents";
+import { API_BASE_URL } from "../../config/env";
 import BookingPanel from "./components/BookingPanel";
 
 export default function DoctorProfile() {
@@ -11,13 +11,31 @@ export default function DoctorProfile() {
   const location = useLocation();
   const [doctor, setDoctor] = useState(null);
 
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    const found = DOCTORS.find(d => d.id === parseInt(id));
-    setDoctor(found || DOCTORS[0]);
+    const fetchDoctor = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(`${API_BASE_URL}/healthcare/doctors`);
+        if (res.ok) {
+          const doctors = await res.json();
+          // Find by id (integer in dummy data) or _id (MongoDB)
+          const found = doctors.find(d => d.id == id || d._id == id);
+          setDoctor(found || doctors[0]);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDoctor();
     window.scrollTo(0, 0);
   }, [id]);
 
-  if (!doctor) return null;
+  if (loading) return <div className="min-h-screen bg-[#FFF8F0] pt-[120px] text-center text-[#6B4F3A]">Loading doctor profile...</div>;
+  if (!doctor) return <div className="min-h-screen bg-[#FFF8F0] pt-[120px] text-center text-[#1E1410] font-bold">Doctor not found</div>;
 
   return (
     <div className="min-h-screen bg-[#FFF8F0] relative overflow-x-hidden">
@@ -124,8 +142,8 @@ export default function DoctorProfile() {
 
               {/* Review Cards */}
               <div className="mt-[12px] flex flex-col gap-[12px]">
-                {doctor.reviews?.map(review => (
-                  <ReviewCard key={review.id} review={review} />
+                {doctor.reviews?.map((review, idx) => (
+                  <ReviewCard key={review.id || idx} review={review} />
                 ))}
               </div>
 
