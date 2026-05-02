@@ -15,7 +15,7 @@ const NAV_ITEMS = [
   { path: "/home", icon: Home, label: "Home" },
   { path: "/explore", icon: Compass, label: "Explore" },
   { path: "/safety", icon: null, label: "Safety", isCenter: true },
-  { path: "/trips", icon: Map, label: "Trips" },
+  { path: "/trips/new", icon: Map, label: "Trips" },
   { path: "/profile", icon: User, label: "Profile" },
 ];
 
