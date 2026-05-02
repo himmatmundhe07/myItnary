@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ChevronRight, CheckCircle2, ArrowRight } from "lucide-react";
 import TopAppBar from "../../components/shared/TopAppBar";
-import { HOSPITALS, DOCTORS } from "./data";
+import { API_BASE_URL } from "../../config/env";
 import { HospitalHero, HospitalStatsBar, DepartmentCard, DoctorCompactRow } from "./components/HospitalProfileComponents";
 import { ContactEmergencyPanel, DirectionsInfo } from "./components/HospitalDetailComponents";
 import { ReviewCard } from "./components/ProfileComponents";
@@ -10,18 +10,40 @@ import { ReviewCard } from "./components/ProfileComponents";
 export default function HospitalProfile() {
   const { id } = useParams();
   const [hospital, setHospital] = useState(null);
+  const [doctors, setDoctors] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [activeSpecialty, setActiveSpecialty] = useState("All");
 
   useEffect(() => {
-    const found = HOSPITALS.find(h => h.id === parseInt(id));
-    setHospital(found || HOSPITALS[0]);
+    const fetchHospitalData = async () => {
+      try {
+        setLoading(true);
+        const [hospRes, docRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/healthcare/hospitals`),
+          fetch(`${API_BASE_URL}/healthcare/doctors`)
+        ]);
+        if (hospRes.ok && docRes.ok) {
+          const hospitalsData = await hospRes.json();
+          const doctorsData = await docRes.json();
+          const found = hospitalsData.find(h => h.id == id || h._id == id);
+          setHospital(found || hospitalsData[0]);
+          setDoctors(doctorsData);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHospitalData();
     window.scrollTo(0, 0);
   }, [id]);
 
-  if (!hospital) return null;
+  if (loading) return <div className="min-h-screen bg-[#FFF8F0] pt-[120px] text-center text-[#6B4F3A]">Loading hospital profile...</div>;
+  if (!hospital) return <div className="min-h-screen bg-[#FFF8F0] pt-[120px] text-center text-[#1E1410] font-bold">Hospital not found</div>;
 
   // Filter doctors associated with this hospital (Mock filter)
-  const hospitalDoctors = DOCTORS.filter(d => 
+  const hospitalDoctors = doctors.filter(d => 
     d.hospital.includes(hospital.name) && 
     (activeSpecialty === "All" || d.specialty.includes(activeSpecialty))
   );
@@ -93,9 +115,9 @@ export default function HospitalProfile() {
                 ))}
               </div>
               <div className="mt-[12px] flex flex-col gap-[10px]">
-                {hospitalDoctors.map(doctor => (
-                  <Link key={doctor.id} to={`/healthcare/doctor/${doctor.id}`}>
-                    <DoctorCompactRow doctor={doctor} onBook={(d) => window.location.href=`/healthcare/doctor/${d.id}?book=true`} />
+                {hospitalDoctors.map((doctor, idx) => (
+                  <Link key={doctor.id || doctor._id || idx} to={`/healthcare/doctor/${doctor.id || doctor._id}`}>
+                    <DoctorCompactRow doctor={doctor} onBook={(d) => window.location.href=`/healthcare/doctor/${d.id || d._id}?book=true`} />
                   </Link>
                 ))}
               </div>
@@ -108,8 +130,8 @@ export default function HospitalProfile() {
             <div className="mt-[32px]">
               <p className="font-mono-dm text-[11px] text-[#B09880] uppercase">Patient Reviews</p>
               <div className="mt-[12px] flex flex-col gap-[12px]">
-                {hospital.reviews.map(review => (
-                  <ReviewCard key={review.id} review={review} />
+                {hospital.reviews?.map((review, idx) => (
+                  <ReviewCard key={review.id || idx} review={review} />
                 ))}
               </div>
             </div>
