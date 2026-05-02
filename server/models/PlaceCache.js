@@ -6,7 +6,7 @@ const placeCacheSchema = new mongoose.Schema({
   lat: Number,
   lng: Number,
   photoUrl: String,
-  lastUpdated: { type: Date, default: Date.now }
+  createdAt: { type: Date, expires: '30d', default: Date.now }
 });
 
 const PlaceCache = mongoose.model('PlaceCache', placeCacheSchema);
