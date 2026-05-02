@@ -131,7 +131,7 @@ export default function ProfilePage() {
       <Toaster />
 
       <main className="max-w-[1100px] mx-auto pt-[32px] px-[24px]">
-        <div className="flex gap-[48px]">
+        <div className="flex flex-col lg:flex-row gap-[32px] lg:gap-[48px]">
           
           <ProfileSidebar 
             user={user}
