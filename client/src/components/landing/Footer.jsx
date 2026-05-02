@@ -1,7 +1,7 @@
 import { ShieldIcon, IndiaMap, Instagram, XLogo, LinkedIn, YouTube } from "./Icons";
 
 const cols = [
-  { h: "Explore", links: ["Destinations", "Safety Network", "Healthcare", "Hidden Gems", "Smart Itinerary"] },
+  { h: "Explore", links: ["Destinations", "Safety Network", "Healthcare", "Smart Itinerary"] },
   { h: "Company", links: ["About Us", "Our Mission", "Blog", "Press"] },
   { h: "Support", links: ["Help Center", "Emergency Contacts", "Guardian Program", "Contact Us"] },
 ];
@@ -26,7 +26,18 @@ export const Footer = () => {
               <ul className="mt-4 space-y-2.5">
                 {c.links.map((l) => (
                   <li key={l}>
-                    <a href="#" className="font-jakarta text-[14px] text-taupe hover:text-saffron transition">{l}</a>
+                    <button 
+                      onClick={() => {
+                        const id = l.toLowerCase().replace(/\s+/g, '-');
+                        const element = document.getElementById(id);
+                        if (element) {
+                          element.scrollIntoView({ behavior: "smooth" });
+                        }
+                      }}
+                      className="font-jakarta text-[14px] text-taupe hover:text-saffron transition text-left"
+                    >
+                      {l}
+                    </button>
                   </li>
                 ))}
               </ul>

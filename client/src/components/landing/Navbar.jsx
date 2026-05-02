@@ -29,14 +29,20 @@ export const Navbar = () => {
 
         <nav className="hidden lg:flex items-center gap-8">
           {links.map((l) => (
-            <a
+            <button
               key={l}
-              href={`#${l.toLowerCase()}`}
-              className="font-cabinet font-medium text-[15px] text-taupe relative group"
+              onClick={() => {
+                const id = l.toLowerCase();
+                const element = document.getElementById(id);
+                if (element) {
+                  element.scrollIntoView({ behavior: "smooth" });
+                }
+              }}
+              className="font-cabinet font-medium text-[15px] text-taupe relative group cursor-pointer"
             >
               {l}
               <span className="absolute -bottom-1 left-0 w-0 h-[2px] bg-saffron transition-all duration-300 group-hover:w-full" />
-            </a>
+            </button>
           ))}
         </nav>
 
