@@ -8,24 +8,7 @@ import TopAppBar from "../../components/shared/TopAppBar";
 import ProfileSidebar from "./components/ProfileSidebar";
 import { logout } from "../../store/authSlice";
 
-const REVIEWS_DATA = [
-  {
-    id: 1,
-    place: "Ranakpur Jain Temple",
-    location: "Sadri, Rajasthan",
-    rating: 5,
-    date: "May 12, 2024",
-    text: "Absolutely stunning architecture. The marble carving is out of this world. Make sure to dress modestly or they will provide you with coverings at the entrance. Very peaceful."
-  },
-  {
-    id: 2,
-    place: "Majuli Island Homestay",
-    location: "Assam",
-    rating: 4,
-    date: "Mar 20, 2024",
-    text: "A deeply cultural experience. The Mising tribe hospitality was amazing. Taking off one star because the ferry ride over was a bit chaotic, but totally worth it!"
-  }
-];
+const REVIEWS_DATA = [];
 
 const BADGES_DATA = [
   { id: 1, name: "Pioneer Traveler", desc: "Completed your first AI-generated trip.", unlocked: true, icon: Award, color: "#E8640C" },
@@ -53,7 +36,7 @@ export default function ReviewsPage() {
       <TopAppBar />
 
       <main className="max-w-[1100px] mx-auto pt-[72px] px-[24px]">
-        <div className="flex gap-[48px]">
+        <div className="flex flex-col lg:flex-row gap-[32px] lg:gap-[48px]">
           
           <ProfileSidebar 
             user={user}
