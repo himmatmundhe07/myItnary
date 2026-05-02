@@ -1,12 +1,14 @@
-import { useState, useMemo } from "react";
-import { Link, useParams } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useState, useMemo, useEffect } from "react";
+import { Link, useParams, useLocation } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
 import { MapPin, X, ChevronRight, Shield, Star, Navigation, Bookmark, Loader2 } from "lucide-react";
 import { GoogleMap, useJsApiLoader, Marker, Polyline } from "@react-google-maps/api";
 import TopAppBar from "../../components/shared/TopAppBar";
 import { GOOGLE_MAPS_API_KEY } from "../../config/env";
+import { fetchTripById } from "../../store/tripSlice";
+import toast, { Toaster } from "react-hot-toast";
 
-const LIBRARIES = ['places'];
+const LIBRARIES = ['places', 'geometry'];
 
 const mapOptions = {
   disableDefaultUI: false,
@@ -28,11 +30,21 @@ const mapOptions = {
 };
 
 export default function TripMapView() {
-  const { currentTrip } = useSelector((state) => state.trip);
+  const dispatch = useDispatch();
+  const { id } = useParams();
+  const location = useLocation();
+  const { currentTrip, loading } = useSelector((state) => state.trip);
   const [activeDay, setActiveDay] = useState(1);
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [showGuardian, setShowGuardian] = useState(false);
   const [toggles, setToggles] = useState([true, true, true, false, true]);
+
+  // If currentTrip is not in Redux (e.g. page refresh), try fetching from DB
+  useEffect(() => {
+    if (!currentTrip && id && !loading) {
+      dispatch(fetchTripById(id));
+    }
+  }, [currentTrip, id, loading, dispatch]);
 
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
@@ -54,23 +66,49 @@ export default function TripMapView() {
   }, [dayData]);
 
   const polylines = useMemo(() => {
-    if (!dayData) return [];
+    if (!dayData || !window.google) return [];
     const lines = [];
     dayData.activities.forEach(a => {
       if (a.nextActivityRoute && a.nextActivityRoute.polyline) {
-        // Simple polyline decoding or just using the points if I had them
-        // For now, let's just draw lines between markers directly as fallback
+        try {
+          lines.push(window.google.maps.geometry.encoding.decodePath(a.nextActivityRoute.polyline));
+        } catch (e) {
+          console.error("Polyline decode error", e);
+        }
       }
     });
     return lines;
-  }, [dayData]);
+  }, [dayData, isLoaded]);
 
   const toggle = (i) => setToggles(p => p.map((v, j) => j === i ? !v : v));
 
-  if (!currentTrip) return <div className="p-20 text-center">No trip found. Please generate one first.</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FFF8F0] flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-[#E8640C] mx-auto" />
+          <p className="mt-4 font-cabinet font-bold text-[#1E1410]">Loading your trip...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentTrip) {
+    return (
+      <div className="min-h-screen bg-[#FFF8F0] flex flex-col items-center justify-center">
+        <div className="text-center p-8 bg-white border border-[#E8D5B7] rounded-2xl shadow-xl max-w-md">
+          <MapPin size={48} className="text-[#E8640C] mx-auto mb-4" />
+          <h2 className="font-display font-bold text-2xl text-[#1E1410]">No Trip Selected</h2>
+          <p className="font-jakarta text-[#6B4F3A] mt-2 mb-6">Generate an itinerary first, then come back to view it on the map.</p>
+          <Link to="/trips/new" className="inline-flex h-12 px-8 items-center justify-center bg-[#E8640C] text-white rounded-xl font-cabinet font-bold">Start Planning</Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex flex-col bg-[#FFF8F0]">
+      <Toaster position="bottom-center" />
       <TopAppBar variant="logo" />
 
       {/* Map Area */}
@@ -103,14 +141,27 @@ export default function TripMapView() {
               )
             ))}
 
-            {/* Simple Polyline between activities */}
-            {toggles[4] && dayData && (
+            {/* Decoded Polylines between activities */}
+            {toggles[4] && polylines.map((path, idx) => (
+              <Polyline
+                key={idx}
+                path={path}
+                options={{
+                  strokeColor: "#E8640C",
+                  strokeOpacity: 0.8,
+                  strokeWeight: 4,
+                }}
+              />
+            ))}
+            
+            {/* Fallback straight line if no polylines decoded */}
+            {toggles[4] && polylines.length === 0 && dayData && (
               <Polyline
                 path={dayData.activities.filter(a => a.lat).map(a => ({ lat: a.lat, lng: a.lng }))}
                 options={{
                   strokeColor: "#E8640C",
-                  strokeOpacity: 0.8,
-                  strokeWeight: 3,
+                  strokeOpacity: 0.5,
+                  strokeWeight: 2,
                   icons: [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 4 }, offset: '0', repeat: '20px' }]
                 }}
               />
@@ -141,7 +192,10 @@ export default function TripMapView() {
         <div className="absolute top-[16px] left-[16px] w-[340px] bg-white border border-[#E8D5B7] rounded-[16px] shadow-[0_8px_24px_rgba(30,20,16,0.14)] z-20 max-h-[calc(100vh-104px)] overflow-y-auto">
           {/* Header */}
           <div className="px-[20px] py-[16px] border-b border-[#E8D5B7] sticky top-0 bg-white z-10">
-            <p className="font-mono-dm text-[10px] text-[#B09880] uppercase tracking-[2px]">{currentTrip.tripTitle} — Day {activeDay}</p>
+            <div className="flex items-center justify-between">
+              <p className="font-mono-dm text-[10px] text-[#B09880] uppercase tracking-[2px] truncate pr-2">{currentTrip.tripTitle} — Day {activeDay}</p>
+              <Link to={location.pathname.replace('map', 'itinerary')} className="font-cabinet font-semibold text-[11px] text-[#E8640C] shrink-0 border border-[#E8640C] rounded-full px-2 py-1 hover:bg-[#E8640C] hover:text-white transition-colors">Back to Itinerary</Link>
+            </div>
             <div className="mt-[10px] flex gap-[6px] overflow-x-auto no-scrollbar">
               {currentTrip.dailyItinerary.map(d => (
                 <button key={d.day} onClick={() => setActiveDay(d.day)} className={`h-[28px] px-[16px] rounded-[100px] font-cabinet font-medium text-[12px] transition-colors shrink-0 ${activeDay === d.day ? 'bg-[#E8640C] text-white' : 'bg-[#FEF3E2] text-[#6B4F3A]'}`}>Day {d.day}</button>
@@ -178,8 +232,8 @@ export default function TripMapView() {
               <h3 className="font-cabinet font-bold text-[18px] text-[#1E1410] mt-[6px]">{selectedActivity.activity}</h3>
               <p className="font-jakarta text-[13px] text-[#6B4F3A] line-clamp-2 mt-[6px]">{selectedActivity.description}</p>
               <div className="mt-[12px] flex gap-[10px]">
-                <button className="flex-1 h-[40px] rounded-[10px] border-[1.5px] border-[#E8640C] text-[#E8640C] font-cabinet font-semibold text-[13px] flex items-center justify-center gap-[6px]"><Navigation size={14} /> Get Directions</button>
-                <button className="flex-1 h-[40px] rounded-[10px] bg-[#E8640C] text-white font-cabinet font-semibold text-[13px] flex items-center justify-center gap-[6px]"><Bookmark size={14} /> Add to Saved</button>
+                <button onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${selectedActivity.lat},${selectedActivity.lng}`, '_blank')} className="flex-1 h-[40px] rounded-[10px] border-[1.5px] border-[#E8640C] text-[#E8640C] font-cabinet font-semibold text-[13px] flex items-center justify-center gap-[6px]"><Navigation size={14} /> Get Directions</button>
+                <button onClick={() => toast.success(`${selectedActivity.activity} saved to your collection!`)} className="flex-1 h-[40px] rounded-[10px] bg-[#E8640C] text-white font-cabinet font-semibold text-[13px] flex items-center justify-center gap-[6px]"><Bookmark size={14} /> Add to Saved</button>
               </div>
             </div>
           </div>

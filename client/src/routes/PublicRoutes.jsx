@@ -9,6 +9,8 @@ const SignupStep2 = lazy(() => import("../pages/auth/SignupStep2"));
 const SignupStep3 = lazy(() => import("../pages/auth/SignupStep3"));
 const ForgotPassword = lazy(() => import("../pages/auth/ForgotPassword"));
 const OtpVerification = lazy(() => import("../pages/auth/OtpVerification"));
+const TermsPage = lazy(() => import("../pages/system/TermsPage"));
+const PrivacyPage = lazy(() => import("../pages/system/PrivacyPage"));
 
 const PublicRoutes = () => (
   <>
@@ -19,6 +21,8 @@ const PublicRoutes = () => (
     <Route path="/auth/signup/step3" element={<SignupStep3 />} />
     <Route path="/auth/forgot-password" element={<ForgotPassword />} />
     <Route path="/auth/verify-otp" element={<OtpVerification />} />
+    <Route path="/terms" element={<TermsPage />} />
+    <Route path="/privacy" element={<PrivacyPage />} />
   </>
 );
 
