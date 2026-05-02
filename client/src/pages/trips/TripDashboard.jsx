@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchTrips } from '../../store/tripSlice';
 import { Helmet } from 'react-helmet-async';
 import {
   Search, MapPin, Bell, Calendar, Sun, Shield, Clock, ChevronRight,
@@ -30,83 +31,110 @@ const Label = ({ children }) => (
 /* ══════════════════════════════════════════════════════════
    ZONE 1 — Active Trip Hero Banner
    ══════════════════════════════════════════════════════════ */
-const ActiveTripHero = () => (
-  <div className="w-full h-[220px] relative">
-    <img src={P.jaisalmer} alt="Jaisalmer Fort at golden hour" className="absolute inset-0 w-full h-full object-cover" />
-    {/* gradient */}
-    <div className="absolute inset-0" style={{ background:'linear-gradient(180deg, transparent 20%, rgba(20,14,10,0.72) 100%)' }} />
-
-    {/* badge */}
-    <div className="absolute top-[20px] left-[20px] h-[24px] px-[14px] flex items-center rounded-[100px] bg-white/[0.18] border border-white/30">
-      <span className="font-mono-dm text-[10px] text-white uppercase tracking-wider">Active Trip</span>
-    </div>
-
-    {/* bottom content — centered container */}
-    <div className="absolute bottom-0 left-0 right-0">
-      <div className="max-w-[1200px] mx-auto px-[48px] pb-[36px] flex items-end justify-between">
-        {/* left */}
-        <div>
-          <p className="font-mono-dm text-[12px] text-white/60 uppercase tracking-[2px]">Day 2 of 5</p>
-          <h2 className="font-display font-extrabold text-[38px] text-white leading-none mt-[6px]">Jaisalmer Explorer</h2>
-          <p className="font-mono-dm text-[12px] text-white/55 mt-[8px]">May 10–15, 2025 · Rajasthan · ₹15,000</p>
+const ActiveTripHero = ({ trip }) => {
+  if (!trip) {
+    return (
+      <div className="w-full min-h-[260px] md:min-h-[220px] relative flex flex-col justify-end bg-[#1E1410]">
+        <div className="relative z-10 w-full">
+          <div className="max-w-[1200px] mx-auto px-[24px] md:px-[48px] pb-[24px] md:pb-[36px] pt-[80px] md:pt-[60px] flex flex-col items-center justify-center text-center">
+            <h2 className="font-display font-extrabold text-[32px] md:text-[38px] text-white leading-none mt-[6px]">Start Your Next Adventure</h2>
+            <p className="font-mono-dm text-[12px] text-white/55 mt-[8px] mb-[16px]">Generate AI-powered itineraries instantly.</p>
+            <Link to="/trips/new" className="font-cabinet font-semibold text-[14px] text-[#1E1410] bg-[#E8640C] text-white px-6 py-3 rounded-xl hover:brightness-105 transition-colors">
+              Plan New Trip
+            </Link>
+          </div>
         </div>
-        {/* right */}
-        <div className="flex items-center gap-[12px]">
-          {/* progress */}
-          <div className="bg-white/[0.15] backdrop-blur-[8px] border border-white/25 rounded-[100px] px-[20px] py-[8px] flex flex-col items-center gap-[6px]">
-            <div className="w-[80px] h-[4px] bg-white/25 rounded-full overflow-hidden">
-              <div className="h-full bg-[#E8640C] rounded-full" style={{ width:'40%' }} />
-            </div>
-            <span className="font-cabinet font-bold text-[13px] text-white">Day 2 / 5</span>
+      </div>
+    );
+  }
+
+  const durationStr = trip.startDate && trip.endDate ? `${new Date(trip.startDate).toLocaleDateString()} – ${new Date(trip.endDate).toLocaleDateString()}` : '';
+  const heroImg = trip.dailyItinerary?.[0]?.activities?.[0]?.photoUrl || P.jaisalmer;
+
+  return (
+    <div className="w-full min-h-[260px] md:min-h-[220px] relative flex flex-col justify-end">
+      <img src={heroImg} alt={trip.tripTitle} className="absolute inset-0 w-full h-full object-cover" />
+      <div className="absolute inset-0" style={{ background:'linear-gradient(180deg, transparent 20%, rgba(20,14,10,0.72) 100%)' }} />
+
+      <div className="absolute top-[20px] left-[20px] h-[24px] px-[14px] flex items-center rounded-[100px] bg-white/[0.18] border border-white/30 z-10">
+        <span className="font-mono-dm text-[10px] text-white uppercase tracking-wider">{trip.status || 'Active Trip'}</span>
+      </div>
+
+      <div className="relative z-10 w-full">
+        <div className="max-w-[1200px] mx-auto px-[24px] md:px-[48px] pb-[24px] md:pb-[36px] pt-[80px] md:pt-[60px] flex flex-col md:flex-row items-start md:items-end justify-between gap-[20px] md:gap-0">
+          <div>
+            <p className="font-mono-dm text-[12px] text-white/60 uppercase tracking-[2px]">Trip duration: {trip.duration} days</p>
+            <h2 className="font-display font-extrabold text-[32px] md:text-[38px] text-white leading-none mt-[6px]">{trip.tripTitle}</h2>
+            <p className="font-mono-dm text-[12px] text-white/55 mt-[8px]">{durationStr} · {trip.location} · {trip.budget}</p>
           </div>
-          {/* safety */}
-          <div className="bg-[rgba(45,106,79,0.25)] border border-[rgba(45,106,79,0.40)] rounded-[100px] px-[14px] py-[6px] flex items-center gap-[6px]">
-            <Shield size={12} className="text-[#4ADE80]" />
-            <span className="font-mono-dm text-[11px] text-white">Safety 87/100</span>
+          <div className="flex flex-wrap items-center gap-[12px]">
+            <Link to="/trips/itinerary" className="font-cabinet font-semibold text-[13px] text-white hover:text-white/80 transition-colors whitespace-nowrap">
+              View Itinerary →
+            </Link>
           </div>
-          {/* link */}
-          <Link to="/trips/jaisalmer" className="font-cabinet font-semibold text-[13px] text-white hover:text-white/80 transition-colors whitespace-nowrap">
-            View Itinerary →
-          </Link>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 /* ══════════════════════════════════════════════════════════
    LEFT COLUMN — Weather · Budget · Safety
    ══════════════════════════════════════════════════════════ */
 
-const WeatherBlock = () => (
-  <div className="bg-white border border-[#E8D5B7] rounded-[14px] p-[16px] shadow-[0_2px_8px_rgba(30,20,16,0.07)] mb-[16px]">
-    <Label>Today's Weather</Label>
-    <div className="mt-[10px] flex items-center justify-between">
-      <div className="flex items-baseline gap-[6px]">
-        <span className="font-display font-bold text-[36px] text-[#1E1410] leading-none">34°C</span>
-        <span className="font-cabinet font-medium text-[14px] text-[#1E1410]">Partly Cloudy</span>
-      </div>
-      <Sun size={28} className="text-[#F0A500]" fill="currentColor" />
-    </div>
-    <div className="mt-[12px] flex items-center gap-[16px]">
-      <span className="font-mono-dm text-[10px] text-[#6B4F3A]">Feels 31°C</span>
-      <span className="font-mono-dm text-[10px] text-[#B09880]">H: 38° L: 26°</span>
-      <span className="font-mono-dm text-[10px] text-[#C0392B]">UV: High</span>
-    </div>
-    <div className="mt-[10px] border-t border-[#F5EDE0] pt-[10px] flex justify-between">
-      <span className="font-mono-dm text-[10px] text-[#B09880]">Sunrise 06:14</span>
-      <span className="font-mono-dm text-[10px] text-[#B09880]">Sunset 19:42</span>
-    </div>
-    <p className="text-center font-jakarta text-[11px] text-[#B09880] mt-[4px]">Source: OpenWeatherMap</p>
-  </div>
-);
+const WeatherBlock = ({ trip }) => {
+  const [weather, setWeather] = React.useState(null);
 
-const BudgetBlock = () => {
-  const spent = 1400, total = 2000, pct = (spent / total) * 100;
-  const r = 36, c = 2 * Math.PI * r;
+  React.useEffect(() => {
+    if (!trip) return;
+    const lat = trip.dailyItinerary?.[0]?.activities?.[0]?.lat || 28.6139;
+    const lng = trip.dailyItinerary?.[0]?.activities?.[0]?.lng || 77.2090;
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,apparent_temperature,weather_code&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max&timezone=auto`)
+      .then(res => res.json())
+      .then(data => setWeather(data))
+      .catch(console.error);
+  }, [trip]);
+
+  if (!weather || !trip) return null;
+  const current = weather.current;
+  const daily = weather.daily;
+
   return (
     <div className="bg-white border border-[#E8D5B7] rounded-[14px] p-[16px] shadow-[0_2px_8px_rgba(30,20,16,0.07)] mb-[16px]">
-      <Label>Day 2 Budget</Label>
+      <Label>Current Weather</Label>
+      <div className="mt-[10px] flex items-center justify-between">
+        <div className="flex items-baseline gap-[6px]">
+          <span className="font-display font-bold text-[36px] text-[#1E1410] leading-none">{Math.round(current.temperature_2m)}°C</span>
+        </div>
+        <Sun size={28} className="text-[#F0A500]" fill="currentColor" />
+      </div>
+      <div className="mt-[12px] flex items-center gap-[16px]">
+        <span className="font-mono-dm text-[10px] text-[#6B4F3A]">Feels {Math.round(current.apparent_temperature)}°C</span>
+        <span className="font-mono-dm text-[10px] text-[#B09880]">H: {Math.round(daily.temperature_2m_max?.[0] || 0)}° L: {Math.round(daily.temperature_2m_min?.[0] || 0)}°</span>
+        <span className="font-mono-dm text-[10px] text-[#C0392B]">UV: {daily.uv_index_max?.[0] || 'N/A'}</span>
+      </div>
+      <div className="mt-[10px] border-t border-[#F5EDE0] pt-[10px] flex justify-between">
+        <span className="font-mono-dm text-[10px] text-[#B09880]">Sunrise {daily.sunrise?.[0] ? new Date(daily.sunrise[0]).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--:--'}</span>
+        <span className="font-mono-dm text-[10px] text-[#B09880]">Sunset {daily.sunset?.[0] ? new Date(daily.sunset[0]).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--:--'}</span>
+      </div>
+      <p className="text-center font-jakarta text-[11px] text-[#B09880] mt-[4px]">Source: Open-Meteo</p>
+    </div>
+  );
+};
+
+const BudgetBlock = ({ trip }) => {
+  if (!trip) return null;
+  const totalStr = trip.estimatedCosts?.total || '0';
+  const match = totalStr.replace(/,/g, '').match(/\d+/);
+  const total = match ? parseInt(match[0], 10) : 20000;
+  const spent = Math.floor(total * 0.4); 
+  const pct = (spent / total) * 100;
+  const r = 36, c = 2 * Math.PI * r;
+  const breakdown = trip.estimatedCosts?.breakdown || {};
+
+  return (
+    <div className="bg-white border border-[#E8D5B7] rounded-[14px] p-[16px] shadow-[0_2px_8px_rgba(30,20,16,0.07)] mb-[16px]">
+      <Label>Est. Trip Budget</Label>
       {/* donut */}
       <div className="mt-[10px] flex justify-center">
         <svg width={80} height={80} viewBox="0 0 80 80">
@@ -118,22 +146,22 @@ const BudgetBlock = () => {
           <text x={40} y={50} textAnchor="middle" className="font-mono-dm text-[9px]" fill="#B09880">spent</text>
         </svg>
       </div>
-      <p className="text-center font-cabinet font-semibold text-[13px] text-[#2D6A4F] mt-[12px]">₹600 remaining today</p>
+      <p className="text-center font-cabinet font-semibold text-[13px] text-[#2D6A4F] mt-[12px]">₹{(total - spent).toLocaleString('en-IN')} remaining</p>
       {/* breakdown */}
-      <div className="mt-[12px] flex flex-col">
-        {[['Food','₹500'],['Activities','₹600'],['Transport','₹300']].map(([cat, amt]) => (
-          <div key={cat} className="h-[32px] flex items-center justify-between">
+      <div className="mt-[16px] flex flex-col gap-[12px]">
+        {Object.entries(breakdown).slice(0, 3).map(([cat, amt]) => (
+          <div key={cat} className="flex flex-col border-b border-[#F5EDE0] last:border-0 pb-[8px]">
             <div className="flex items-center gap-[8px]">
               <span className="w-[6px] h-[6px] rounded-full bg-[#E8D5B7]" />
-              <span className="font-jakarta text-[13px] text-[#6B4F3A]">{cat}</span>
+              <span className="font-cabinet font-bold text-[13px] text-[#1E1410] capitalize">{cat}</span>
             </div>
-            <span className="font-mono-dm text-[11px] text-[#1E1410]">{amt}</span>
+            <p className="font-jakarta text-[12px] text-[#6B4F3A] mt-[4px] pl-[14px] leading-[1.5]">{amt}</p>
           </div>
         ))}
       </div>
-      <div className="border-t border-[#F5EDE0] mt-[4px] pt-[8px] flex items-center justify-between">
-        <span className="font-cabinet font-semibold text-[13px] text-[#1E1410]">Day Total</span>
-        <span className="font-display font-bold text-[15px] text-[#E8640C]">₹1,400 / ₹2,000</span>
+      <div className="border-t border-[#F5EDE0] mt-[8px] pt-[12px] flex items-center justify-between">
+        <span className="font-cabinet font-bold text-[14px] text-[#1E1410]">Est Total</span>
+        <span className="font-display font-bold text-[16px] text-[#E8640C]">{trip.estimatedCosts?.total || 'N/A'}</span>
       </div>
     </div>
   );
@@ -165,32 +193,25 @@ const SafetyBlock = () => (
    CENTER COLUMN — Activities · Quick Actions · Notes · Gems
    ══════════════════════════════════════════════════════════ */
 
-const TodayActivities = () => {
-  const items = [
-    { time:'11:30 AM', name:'Lunch at Trilogy Café', cost:'₹300–500', active:true },
-    { time:'02:00 PM', name:'Nathmal Ki Haveli', cost:'Free entry', active:false },
-    { time:'04:30 PM', name:'Gadisar Lake', cost:'Camel ride ₹100', active:false },
-  ];
+const TodayActivities = ({ trip }) => {
+  if (!trip) return null;
+  const day = trip.dailyItinerary?.[0];
+  if (!day) return null;
+  
   return (
     <div>
-      <Label>Today — Day 2</Label>
-      <p className="font-jakarta text-[13px] text-[#6B4F3A] mt-[2px]">Sunday, May 11</p>
+      <Label>Today — Day 1</Label>
+      <p className="font-jakarta text-[13px] text-[#6B4F3A] mt-[2px]">{day.theme}</p>
       <div className="mt-[10px] flex flex-col gap-[10px]">
-        {items.map((a) => (
-          <div key={a.name} className={`bg-white border rounded-[10px] h-[56px] px-[14px] flex items-center gap-[10px] ${a.active ? 'border-[1.5px] border-[#E8640C] border-t-[3px] bg-[rgba(232,100,12,0.03)]' : 'border-[#E8D5B7]'}`}>
-            {a.active && (
-              <div className="flex items-center gap-[4px] mr-[2px]">
-                <span className="w-[6px] h-[6px] rounded-full bg-[#4ADE80] animate-pulse" />
-                <span className="font-mono-dm text-[10px] text-[#4ADE80]">NOW</span>
-              </div>
-            )}
+        {day.activities.slice(0, 3).map((a, idx) => (
+          <div key={idx} className={`bg-white border rounded-[10px] h-[56px] px-[14px] flex items-center gap-[10px] border-[#E8D5B7]`}>
             <span className="h-[20px] px-[10px] rounded-[8px] bg-[#FEF3E2] font-mono-dm text-[10px] text-[#6B4F3A] flex items-center shrink-0">{a.time}</span>
-            <span className="font-cabinet font-semibold text-[14px] text-[#1E1410] flex-1 truncate">{a.name}</span>
-            <span className="font-mono-dm text-[10px] text-[#B09880] shrink-0">{a.cost}</span>
+            <span className="font-cabinet font-semibold text-[14px] text-[#1E1410] flex-1 truncate">{a.activity}</span>
+            <span className="font-mono-dm text-[10px] text-[#B09880] shrink-0 truncate max-w-[80px]">{a.location}</span>
           </div>
         ))}
       </div>
-      <Link to="/trips/jaisalmer" className="mt-[12px] font-cabinet font-medium text-[13px] text-[#E8640C] inline-flex items-center gap-1 group">
+      <Link to="/trips/itinerary" className="mt-[12px] font-cabinet font-medium text-[13px] text-[#E8640C] inline-flex items-center gap-1 group">
         See full day itinerary <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
       </Link>
     </div>
@@ -207,7 +228,7 @@ const QuickActions = () => {
   return (
     <div className="mt-[32px]">
       <Label>Quick Actions</Label>
-      <div className="mt-[10px] grid grid-cols-4 gap-[12px]">
+      <div className="mt-[10px] grid grid-cols-2 sm:grid-cols-4 gap-[12px]">
         {actions.map((a) => (
           <Link key={a.label} to={a.to} className={`bg-white border rounded-[12px] h-[72px] flex flex-col items-center justify-center gap-[6px] hover:shadow-[0_4px_12px_rgba(30,20,16,0.10)] transition-shadow ${a.danger ? 'border-[1.5px] border-[#C0392B]' : 'border-[#E8D5B7]'}`}>
             <a.icon size={20} color={a.color} />
@@ -246,11 +267,11 @@ const NearbyGems = () => {
       <Label>Nearby Hidden Gems</Label>
       <div className="mt-[10px] flex flex-col gap-[10px]">
         {gems.map((g) => (
-          <div key={g.name} className="bg-white border border-[#E8D5B7] rounded-[12px] overflow-hidden h-[80px] flex">
+          <Link key={g.name} to={`/explore/${g.name.toLowerCase().replace(/\s+/g, '-')}`} className="bg-white border border-[#E8D5B7] rounded-[12px] overflow-hidden h-[80px] flex hover:border-[#E8640C] transition-colors group">
             <img src={g.img} alt={g.name} className="w-[90px] h-[80px] object-cover shrink-0" />
             <div className="flex-1 min-w-0 p-[12px_14px] flex flex-col justify-center">
               <div className="flex items-center justify-between">
-                <span className="font-cabinet font-semibold text-[14px] text-[#1E1410] truncate">{g.name}</span>
+                <span className="font-cabinet font-semibold text-[14px] text-[#1E1410] truncate group-hover:text-[#E8640C]">{g.name}</span>
                 <Bookmark size={15} className="text-[#E8640C] shrink-0 cursor-pointer" />
               </div>
               <span className="font-mono-dm text-[10px] text-[#6B4F3A] mt-[3px]">{g.loc}</span>
@@ -259,7 +280,7 @@ const NearbyGems = () => {
                 <span className="px-[6px] py-[2px] rounded bg-[#FEF3E2] border border-[#E8D5B7] font-mono-dm text-[9px] text-[#6B4F3A]">{g.tag}</span>
               </div>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </div>
@@ -270,12 +291,7 @@ const NearbyGems = () => {
    RIGHT COLUMN — My Trips · Saved Places · Community
    ══════════════════════════════════════════════════════════ */
 
-const MyTripsBlock = () => {
-  const trips = [
-    { img: P.jaisalmer, name:'Jaisalmer Explorer', dates:'May 10–15', badge:'ACTIVE', badgeBg:'rgba(232,100,12,0.12)', badgeText:'#E8640C' },
-    { img: P.coorg, name:'Coorg Escape', dates:'May 28–31', badge:'MAY 28', badgeBg:'#FEF3E2', badgeText:'#6B4F3A' },
-    { img: P.hampi, name:'Hampi Weekend', dates:'Apr 4–6', badge:'DONE', badgeBg:'rgba(45,106,79,0.12)', badgeText:'#2D6A4F' },
-  ];
+const MyTripsBlock = ({ trips }) => {
   return (
     <div className="bg-white border border-[#E8D5B7] rounded-[14px] p-[16px] shadow-[0_2px_8px_rgba(30,20,16,0.07)] mb-[16px]">
       <div className="flex items-center justify-between">
@@ -283,20 +299,23 @@ const MyTripsBlock = () => {
         <Link to="/trips/new" className="font-cabinet font-medium text-[12px] text-[#E8640C]">+ New Trip</Link>
       </div>
       <div className="mt-[12px] flex flex-col gap-[10px]">
-        {trips.map((t) => (
-          <div key={t.name} className="h-[48px] flex items-center gap-[10px]">
-            <img src={t.img} alt={t.name} className="w-[40px] h-[40px] rounded-[8px] object-cover shrink-0" />
+        {trips.length === 0 && <p className="text-[13px] text-[#6B4F3A]">No trips saved yet.</p>}
+        {trips.slice(0, 3).map((t) => (
+          <div key={t._id} className="h-[48px] flex items-center gap-[10px]">
+            <img src={t.dailyItinerary?.[0]?.activities?.[0]?.photoUrl || P.jaisalmer} alt={t.tripTitle} className="w-[40px] h-[40px] rounded-[8px] object-cover shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="font-cabinet font-semibold text-[13px] text-[#1E1410] truncate">{t.name}</p>
-              <p className="font-mono-dm text-[10px] text-[#B09880]">{t.dates}</p>
+              <p className="font-cabinet font-semibold text-[13px] text-[#1E1410] truncate">{t.tripTitle}</p>
+              <p className="font-mono-dm text-[10px] text-[#B09880]">{t.startDate ? new Date(t.startDate).toLocaleDateString() : 'Dates unknown'}</p>
             </div>
-            <span className="px-[8px] py-[3px] rounded-[6px] font-mono-dm text-[10px] shrink-0" style={{ background: t.badgeBg, color: t.badgeText }}>{t.badge}</span>
+            <span className="px-[8px] py-[3px] rounded-[6px] font-mono-dm text-[10px] shrink-0 bg-[#FEF3E2] text-[#E8640C] uppercase">{t.status || 'UPCOMING'}</span>
           </div>
         ))}
       </div>
-      <Link to="/trips" className="mt-[10px] font-cabinet font-medium text-[12px] text-[#E8640C] flex justify-center items-center gap-1 group">
-        View all trips <ChevronRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
-      </Link>
+      {trips.length > 0 && (
+        <Link to="/account/history" className="mt-[10px] font-cabinet font-medium text-[12px] text-[#E8640C] flex justify-center items-center gap-1 group">
+          View all trips <ChevronRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+        </Link>
+      )}
     </div>
   );
 };
@@ -322,7 +341,7 @@ const SavedPlacesBlock = () => {
           </div>
         ))}
       </div>
-      <Link to="/explore" className="mt-[10px] font-cabinet font-medium text-[12px] text-[#E8640C] inline-flex items-center gap-1 group">
+      <Link to="/account/saved" className="mt-[10px] font-cabinet font-medium text-[12px] text-[#E8640C] inline-flex items-center gap-1 group">
         View all saved <ChevronRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
       </Link>
     </div>
@@ -352,7 +371,7 @@ const CommunityBlock = () => {
           </div>
         ))}
       </div>
-      <Link to="/explore" className="mt-[10px] font-cabinet font-medium text-[12px] text-[#E8640C] inline-flex items-center gap-1 group">
+      <Link to="/community" className="mt-[10px] font-cabinet font-medium text-[12px] text-[#E8640C] inline-flex items-center gap-1 group">
         Explore community <ChevronRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
       </Link>
     </div>
@@ -363,7 +382,14 @@ const CommunityBlock = () => {
    PAGE ASSEMBLY
    ══════════════════════════════════════════════════════════ */
 const Home = () => {
-  const user = useSelector((state) => state.auth.user);
+  const dispatch = useDispatch();
+  const { trips, loading } = useSelector((state) => state.trip);
+
+  useEffect(() => {
+    dispatch(fetchTrips());
+  }, [dispatch]);
+
+  const activeTrip = trips?.[0];
 
   return (
     <div className="min-h-screen bg-[#FFF8F0]">
@@ -381,30 +407,30 @@ const Home = () => {
       <TopAppBar variant="logo" />
 
       {/* ZONE 1 — Hero */}
-      <ActiveTripHero />
+      <ActiveTripHero trip={activeTrip} />
 
       {/* ZONE 2 — Body */}
-      <div className="max-w-[1200px] mx-auto mt-[32px] px-[24px] lg:px-0">
+      <div className="max-w-[1200px] mx-auto mt-[32px] px-[24px] lg:px-[48px]">
         <div className="flex flex-col lg:grid lg:grid-cols-[280px_1fr_320px] gap-[32px]">
 
           {/* LEFT */}
-          <aside className="lg:sticky lg:top-[96px] self-start">
-            <WeatherBlock />
-            <BudgetBlock />
+          <aside className="w-full lg:sticky lg:top-[96px] lg:self-start">
+            <WeatherBlock trip={activeTrip} />
+            <BudgetBlock trip={activeTrip} />
             <SafetyBlock />
           </aside>
 
           {/* CENTER */}
           <section className="min-w-0">
-            <TodayActivities />
+            <TodayActivities trip={activeTrip} />
             <QuickActions />
             <TripNotes />
             <NearbyGems />
           </section>
 
           {/* RIGHT */}
-          <aside className="lg:sticky lg:top-[96px] self-start">
-            <MyTripsBlock />
+          <aside className="w-full lg:sticky lg:top-[96px] lg:self-start">
+            <MyTripsBlock trips={trips} />
             <SavedPlacesBlock />
             <CommunityBlock />
           </aside>

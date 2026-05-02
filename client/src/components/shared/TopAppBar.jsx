@@ -1,6 +1,7 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { ArrowLeft, X, Bell, Shield, Search } from "lucide-react";
+import { ArrowLeft, X, Bell, Shield, Search, Menu } from "lucide-react";
+import { useState } from "react";
 
 export default function TopAppBar({
   variant = "logo",
@@ -14,6 +15,7 @@ export default function TopAppBar({
   const { user: authUser } = useSelector((state) => state.auth);
   const navigate = useNavigate();
   const location = useLocation();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const handleBack = onBack || (() => navigate(-1));
 
   if (variant === "logo") {
@@ -76,16 +78,46 @@ export default function TopAppBar({
                     <span className="absolute top-2 right-2 w-[8px] h-[8px] rounded-full bg-sindoor border-2 border-cream" />
                   )}
                 </button>
-                <Link to="/account" className="w-9 h-9 rounded-full bg-ivory border-[2px] border-sand flex items-center justify-center overflow-hidden hover:border-saffron transition-colors">
+                <Link to="/account" className="hidden sm:flex w-9 h-9 rounded-full bg-ivory border-[2px] border-sand items-center justify-center overflow-hidden hover:border-saffron transition-colors">
                   <span className="font-cabinet font-bold text-[14px] text-taupe uppercase">
                     {(authUser?.fullName || authUser?.name || 'T')[0]}
                   </span>
                 </Link>
-
+                <button 
+                  className="lg:hidden p-1 flex items-center justify-center w-10 h-10 hover:bg-sand/30 rounded-full transition-colors text-charcoal"
+                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                >
+                  {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                </button>
               </>
             )}
           </div>
         </div>
+
+        {/* Mobile Menu */}
+        {isMobileMenuOpen && (
+          <div className="lg:hidden absolute top-16 left-0 w-full bg-cream border-b border-sand flex flex-col shadow-lg z-40">
+            {[
+              { label: 'Home', path: '/home' },
+              { label: 'Explore', path: '/explore' },
+              { label: 'Healthcare', path: '/healthcare' },
+              { label: 'Trips', path: '/trips/new' },
+              { label: 'Account', path: '/account' },
+            ].map(({ label, path }) => {
+              const isActive = location.pathname.startsWith(path);
+              return (
+                <Link
+                  key={label}
+                  to={path}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`px-6 py-4 border-t border-sand/50 font-cabinet font-medium text-[16px] ${isActive ? 'text-saffron bg-sand/20' : 'text-taupe hover:bg-sand/20'}`}
+                >
+                  {label}
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </header>
     );
   }
