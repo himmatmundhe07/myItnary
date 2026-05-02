@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
 import PlaceCache from "../models/PlaceCache.js";
+import RouteCache from "../models/RouteCache.js";
 
 dotenv.config();
 
@@ -58,6 +59,13 @@ const getGoogleMapsPlaceInfo = async (placeName, location) => {
 
 const getGoogleMapsRouteInfo = async (origin, destination) => {
   try {
+    // Check Cache first to avoid Google Maps API costs
+    const cached = await RouteCache.findOne({
+      originLat: origin.lat, originLng: origin.lng,
+      destLat: destination.lat, destLng: destination.lng
+    });
+    if (cached) return cached;
+
     const response = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
       method: "POST",
       headers: {
@@ -78,11 +86,20 @@ const getGoogleMapsRouteInfo = async (origin, destination) => {
     
     if (data.routes && data.routes.length > 0) {
       const route = data.routes[0];
-      return {
+      const result = {
         duration: route.duration, // e.g. "1200s"
         distance: route.distanceMeters,
         polyline: route.polyline.encodedPolyline
       };
+      
+      // Save to cache asynchronously
+      RouteCache.create({
+        originLat: origin.lat, originLng: origin.lng,
+        destLat: destination.lat, destLng: destination.lng,
+        ...result
+      }).catch(err => console.error("Route cache save error", err));
+
+      return result;
     }
     return null;
   } catch (error) {
@@ -94,7 +111,7 @@ const getGoogleMapsRouteInfo = async (origin, destination) => {
 export const generateItinerary = async (tripData) => {
   try {
     const prompt = `
-      Generate a realistic, detailed travel itinerary for India with the following parameters:
+      Generate a realistic, incredibly detailed travel itinerary for India with the following parameters:
       - Destination: ${tripData.location}
       - Duration: ${tripData.duration} days
       - Budget/Stay Preference: ${tripData.stay}
@@ -103,26 +120,30 @@ export const generateItinerary = async (tripData) => {
       - Interests: ${tripData.interests.join(", ")}
       - Vibe: ${tripData.vibe}
 
+      IMPORTANT: Make the descriptions engaging and highly detailed. 
+      - Do NOT just give basic descriptions. For each activity, include what the user will discover, why they must visit, historical or cultural significance, and insider tips.
+      - For each day, provide explicit, location-specific "safetyNotes" (e.g. "beware of pickpockets near the temple", "avoid isolated alleys after 9 PM", "only use prepaid taxis").
+
       Only suggest real, physically existing places. Factor in realistic travel times between activities.
 
       The response MUST be a valid JSON object with the following structure:
       {
         "tripTitle": "Catchy title",
-        "overview": "Brief summary",
+        "overview": "Detailed summary of the trip, the atmosphere, and what to expect",
         "dailyItinerary": [
           {
             "day": 1,
             "theme": "Day's theme",
             "activities": [
               {
-                "time": "Morning/Afternoon/Evening",
+                "time": "Specific Time (e.g. 09:30 AM)",
                 "activity": "Activity title",
-                "description": "Short description",
+                "description": "Rich 3-4 sentence description explaining why to visit, what you'll discover, and insider tips.",
                 "location": "Specific existing place name (e.g. City Palace, Udaipur)"
               }
-            ],
-            "foodSuggestions": ["Specific Restaurant Name 1", "Specific Restaurant Name 2"],
-            "safetyNotes": "Specific safety tips"
+            ], // Generate 4 to 6 activities per day. Do not limit to just 3!
+            "foodSuggestions": ["Specific Restaurant Name 1 (Known for XYZ)", "Specific Restaurant Name 2"],
+            "safetyNotes": "Comprehensive safety guidelines for this specific day's activities and areas."
           }
         ],
         "estimatedCosts": {
