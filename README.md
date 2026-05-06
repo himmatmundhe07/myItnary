@@ -203,33 +203,23 @@ myItnary/
 
 ### Landing Page
 <!-- Replace with actual screenshot -->
-![Landing Page](./screenshots/landing-page.png)
+<img width="1880" height="915" alt="Screenshot 2026-05-06 173654" src="https://github.com/user-attachments/assets/a7210671-26b4-4534-9594-207d66fe678e" />
+
 
 ### User Dashboard
 <!-- Replace with actual screenshot -->
-![Dashboard](./screenshots/dashboard.png)
+<img width="1883" height="911" alt="Screenshot 2026-05-06 173730" src="https://github.com/user-attachments/assets/c47b6282-d9d9-4fac-8955-2f4a147f3d8d" />
+
 
 ### AI Trip Generation
 <!-- Replace with actual screenshot -->
-![Trip Generation](./screenshots/trip-generation.png)
+<img width="1885" height="908" alt="Screenshot 2026-05-06 173803" src="https://github.com/user-attachments/assets/e017b21c-2170-41e9-b0be-3a12150ddcfa" />
+
 
 ### Generated Itinerary
 <!-- Replace with actual screenshot -->
-![Itinerary](./screenshots/itinerary.png)
+<img width="1878" height="918" alt="Screenshot 2026-05-02 125941" src="https://github.com/user-attachments/assets/63e98f05-c882-4fbc-99dd-ece2d9f1af46" />
 
-### SOS Safety Feature
-<!-- Replace with actual screenshot -->
-![SOS Feature](./screenshots/sos-feature.png)
-
-### Healthcare Facility Finder
-<!-- Replace with actual screenshot -->
-![Healthcare](./screenshots/healthcare.png)
-
-### Mobile Responsive View
-<!-- Replace with actual screenshot -->
-![Mobile View](./screenshots/mobile-view.png)
-
-> 📌 **Screenshots will be added to the `screenshots/` folder.**
 
 ---
 
